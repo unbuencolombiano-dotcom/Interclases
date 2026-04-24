@@ -1,0 +1,2094 @@
+<!-- ============================================================
+     Modulo_Inscripcion.html v4 — Modo Administrador
+     NOVEDADES v4:
+     - Selector de grupo carga automáticamente los datos de la planilla
+     - Admin edita y completa datos en Paso 1 (Equipo) y Paso 2 (Jugadores)
+     - Indicadores TODO:REVISAR resaltados en amarillo
+     - Autoguardado en cada campo al salir (onblur)
+     - Flujo: Seleccionar grupo → Editar equipo → Editar jugadores → Confirmar
+     ============================================================ -->
+
+<div id="modulo-inscripcion">
+<style>
+#modulo-inscripcion {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  max-width: 860px; margin: 0 auto; padding: 0 0 80px;
+}
+.insc-header {
+  background: linear-gradient(135deg, #0047AB 0%, #003380 100%);
+  border-radius: 20px; padding: 28px; margin-bottom: 20px; color: #fff;
+  position: relative; overflow: hidden;
+}
+.insc-header::after {
+  content: ''; position: absolute; right: -30px; top: -30px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: rgba(255,255,255,.05); pointer-events: none;
+}
+.insc-header h1 { font-family:'Syne',sans-serif; font-size:22px; font-weight:900; margin:0 0 4px; }
+.insc-header p  { font-size:13px; opacity:.7; margin:0; }
+.insc-badge {
+  display:inline-block; background:rgba(201,162,39,.25);
+  border:1px solid rgba(201,162,39,.5); color:#f0c84a;
+  font-size:11px; font-weight:600; padding:3px 10px;
+  border-radius:20px; margin-bottom:10px; letter-spacing:.5px;
+}
+.admin-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3);
+  color:#fff; font-size:11px; font-weight:700; padding:4px 12px;
+  border-radius:20px; margin-left:8px; letter-spacing:.3px;
+}
+/* PASOS */
+.pasos { display:flex; gap:0; margin-bottom:24px; border-radius:14px; overflow:hidden; border:1px solid #e2e8f0; }
+.paso-tab { flex:1; padding:12px 8px; text-align:center; font-size:11px; font-weight:600; color:#94a3b8; background:#f8fafc; cursor:default; border-right:1px solid #e2e8f0; transition:all .2s; }
+.paso-tab:last-child { border-right:none; }
+.paso-tab.activo   { background:#0047AB; color:#fff; }
+.paso-tab.completado { background:#e6f4ed; color:#1a7a4a; }
+.paso-num  { display:block; font-size:17px; font-weight:800; line-height:1; margin-bottom:3px; }
+.paso-check { display:none; font-size:15px; }
+.paso-tab.completado .paso-num   { display:none; }
+.paso-tab.completado .paso-check { display:block; }
+/* CARD */
+.insc-card { background:#fff; border:1px solid #e2e8f0; border-radius:18px; padding:24px; margin-bottom:14px; }
+.insc-card-title { font-size:15px; font-weight:700; color:#0d1117; margin:0 0 18px; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.title-icon { width:30px; height:30px; background:#e8f0fb; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+/* CAMPOS */
+.campo-grupo  { margin-bottom:16px; }
+.campo-label  { display:block; font-size:11px; font-weight:700; color:#475569; margin-bottom:6px; text-transform:uppercase; letter-spacing:.6px; }
+.campo-label .req { color:#c0392b; margin-left:2px; }
+.campo-input,.campo-select {
+  width:100%; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:11px;
+  font-size:14px; font-family:'Plus Jakarta Sans',sans-serif; color:#0d1117;
+  background:#fff; transition:all .2s; box-sizing:border-box;
+}
+/* Inputs de texto en mayúsculas mientras se escribe */
+input.campo-input[type="text"], input[data-campo="nombre"] {
+  text-transform: uppercase;
+}
+.campo-input:focus,.campo-select:focus { outline:none; border-color:#0047AB; box-shadow:0 0 0 3px rgba(0,71,171,.08); }
+.campo-input.error { border-color:#c0392b; }
+.campo-input.pendiente,.campo-select.pendiente { border-color:#c9a227!important; background:#fef9ec!important; }
+.campo-hint { font-size:11px; color:#94a3b8; margin-top:4px; }
+/* GRID */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+@media(max-width:560px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+/* DEPORTE */
+.deporte-cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+.deporte-card { border:2px solid #e2e8f0; border-radius:13px; padding:14px 16px; cursor:pointer; transition:all .2s; display:flex; flex-direction:column; gap:4px; background:#fff; }
+.deporte-card:hover { border-color:#0047AB; background:#f0f5ff; transform:translateY(-1px); }
+.deporte-card.seleccionado { border-color:#0047AB; background:#e8f0fb; }
+.deporte-card-icon  { font-size:24px; }
+.deporte-card-nombre { font-size:14px; font-weight:700; color:#0d1117; }
+.deporte-card-desc   { font-size:11px; color:#64748b; }
+.deporte-card.seleccionado .deporte-card-nombre { color:#0047AB; }
+.grupo-deporte-estado { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:9px; font-size:12px; font-weight:600; margin-top:6px; }
+.estado-libre   { background:#e6f4ed; color:#1a7a4a; }
+.estado-ocupado { background:#fee2e2; color:#c0392b; }
+/* PAÍS CARD */
+.pais-card {
+  display:none; margin-top:12px; background:linear-gradient(135deg,#0047AB0D,#0060d40D);
+  border:1.5px solid #0047AB33; border-radius:13px; padding:14px 16px;
+  align-items:center; gap:14px;
+}
+/* ALERTA TODO */
+.alerta-todo {
+  background:#fef9ec; border:1px solid #c9a227; border-radius:11px;
+  padding:10px 14px; font-size:12px; color:#7a5d0f;
+  display:flex; align-items:flex-start; gap:8px; margin-bottom:14px;
+}
+.alerta-todo-count { font-weight:800; color:#c9a227; }
+/* JUGADORES */
+.jugadores-lista { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.jugador-fila {
+  background:#fafbff; border:1px solid #e2e8f0; border-radius:13px;
+  padding:13px; position:relative; transition:border-color .2s;
+}
+.jugador-fila:hover { border-color:#c7d8f8; }
+.jugador-fila.es-mujer { background:#f0faf4; border-color:#b6e0c8; }
+.jugador-fila.tiene-pendiente { border-color:#c9a227; background:#fef9ec; }
+.jugador-num { position:absolute; top:13px; left:13px; width:24px; height:24px; background:#0047AB; color:#fff; border-radius:7px; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.jugador-num.es-mujer-num { background:#1a7a4a; }
+.jugador-num.pendiente-num { background:#c9a227; }
+.jugador-campos { display:grid; grid-template-columns:1fr 110px 80px 120px; gap:10px; padding-left:34px; }
+@media(max-width:600px){.jugador-campos{grid-template-columns:1fr 1fr;}}
+.jugador-eliminar { position:absolute; top:10px; right:10px; width:26px; height:26px; border:none; background:#fee2e2; color:#c0392b; border-radius:7px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.jugador-eliminar:hover { background:#c0392b; color:#fff; }
+.btn-agregar-jugador { width:100%; padding:11px; border:1.5px dashed #cbd5e1; border-radius:12px; background:transparent; color:#64748b; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s; font-family:'Plus Jakarta Sans',sans-serif; }
+.btn-agregar-jugador:hover { border-color:#0047AB; color:#0047AB; background:#f0f5ff; }
+.jugadores-stats { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+.jug-stat { flex:1; min-width:85px; padding:10px 12px; border-radius:11px; text-align:center; border:1px solid #e2e8f0; background:#f8fafc; }
+.jug-stat-num { font-size:22px; font-weight:800; line-height:1; }
+.jug-stat-lbl { font-size:10px; color:#64748b; margin-top:2px; text-transform:uppercase; letter-spacing:.05em; }
+.jug-stat.ok   .jug-stat-num { color:#1a7a4a; }
+.jug-stat.warn .jug-stat-num { color:#c9a227; }
+.jug-stat.err  .jug-stat-num { color:#c0392b; }
+.alerta-genero { background:#fdf6e3; border:1px solid #c9a227; border-radius:11px; padding:10px 14px; font-size:12px; color:#7a5d0f; display:flex; align-items:flex-start; gap:8px; margin-top:10px; }
+/* RESUMEN */
+.resumen-card { background:#f8fafc; border-radius:13px; padding:16px; margin-bottom:14px; }
+.resumen-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:13px; border-bottom:1px solid #f1f5f9; }
+.resumen-row:last-child { border-bottom:none; }
+.resumen-label { color:#64748b; font-weight:500; }
+.resumen-valor { color:#0d1117; font-weight:700; }
+.resumen-ok   { color:#1a7a4a; }
+.resumen-warn { color:#c9a227; }
+.resumen-err  { color:#c0392b; }
+/* BOTONES */
+.nav-btns { display:flex; gap:10px; justify-content:space-between; margin-top:20px; }
+.btn-anterior { padding:11px 24px; border:1.5px solid #e2e8f0; border-radius:11px; background:#fff; color:#475569; font-size:14px; font-weight:600; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:all .2s; }
+.btn-anterior:hover { border-color:#0047AB; color:#0047AB; }
+.btn-siguiente { padding:11px 28px; border:none; border-radius:11px; background:#0047AB; color:#fff; font-size:14px; font-weight:600; cursor:pointer; margin-left:auto; font-family:'Plus Jakarta Sans',sans-serif; transition:all .2s; box-shadow:0 2px 8px rgba(0,71,171,.25); }
+.btn-siguiente:hover    { background:#003380; }
+.btn-siguiente:disabled { background:#94a3b8; cursor:not-allowed; box-shadow:none; }
+.btn-enviar { padding:13px 32px; border:none; border-radius:11px; background:linear-gradient(135deg,#1a7a4a,#145c38); color:#fff; font-size:15px; font-weight:700; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:8px; font-family:'Plus Jakarta Sans',sans-serif; box-shadow:0 3px 12px rgba(26,122,74,.3); }
+.btn-enviar:hover    { transform:translateY(-1px); box-shadow:0 5px 16px rgba(26,122,74,.35); }
+.btn-enviar:disabled { background:#94a3b8; cursor:not-allowed; box-shadow:none; transform:none; }
+/* ENVIO */
+.estado-envio { text-align:center; padding:36px 20px; display:none; }
+.estado-spinner { width:48px; height:48px; border:4px solid #e2e8f0; border-top-color:#0047AB; border-radius:50%; animation:girar 1s linear infinite; margin:0 auto 16px; }
+@keyframes girar{to{transform:rotate(360deg);}}
+.estado-exito { color:#1a7a4a; }
+.estado-error { color:#c0392b; }
+.check-grande { font-size:52px; margin-bottom:14px; }
+/* TOAST */
+.insc-toast { display:none; border-radius:12px; padding:12px 16px; font-size:13px; font-weight:600; margin-bottom:14px; align-items:flex-start; gap:10px; line-height:1.5; }
+.insc-toast.visible { display:flex; }
+.insc-toast.toast-error { background:#fee2e2; border:1px solid #fca5a5; color:#b91c1c; }
+.insc-toast.toast-warn  { background:#fdf6e3; border:1px solid #fcd34d; color:#92400e; }
+.insc-toast.toast-ok    { background:#e6f4ed; border:1px solid #b6e0c8; color:#1a7a4a; }
+.insc-toast-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.insc-toast-body { flex:1; }
+.insc-toast-close { background:none; border:none; font-size:16px; cursor:pointer; color:inherit; opacity:.6; padding:0; flex-shrink:0; }
+.insc-toast-close:hover { opacity:1; }
+/* AUTOSAVE */
+.autosave-badge { display:none; font-size:10px; font-weight:600; padding:3px 9px; border-radius:20px; margin-left:8px; vertical-align:middle; }
+.autosave-badge.guardado  { background:#e6f4ed; color:#1a7a4a; display:inline-block; }
+.autosave-badge.guardando { background:#e8f0fb; color:#0047AB; display:inline-block; }
+/* Badge mini por fila de jugador */
+.jug-save-badge {
+  position:absolute; top:10px; right:36px;
+  font-size:9px; font-weight:700; padding:2px 7px; border-radius:8px;
+  opacity:0; transition:opacity .3s; pointer-events:none;
+}
+.jug-save-badge.guardando { background:#e8f0fb; color:#0047AB; opacity:1; }
+.jug-save-badge.guardado  { background:#e6f4ed; color:#1a7a4a; opacity:1; }
+.jug-save-badge.error     { background:#fee2e2; color:#c0392b; opacity:1; }
+/* PROGRESO GRUPOS */
+.grupos-progress {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:8px; margin-bottom:20px;
+}
+.grupo-chip {
+  display:flex; align-items:center; gap:8px; padding:8px 12px;
+  border-radius:11px; font-size:12px; font-weight:600; border:1.5px solid #e2e8f0;
+  cursor:pointer; transition:all .15s; background:#fff;
+}
+.grupo-chip:hover { border-color:#0047AB; background:#f0f5ff; }
+.grupo-chip.chip-ok      { background:#e6f4ed; border-color:#b6e0c8; color:#1a7a4a; }
+.grupo-chip.chip-parcial { background:#fef9ec; border-color:#c9a227;  color:#7a5d0f; }
+.grupo-chip.chip-vacio   { background:#f8fafc; border-color:#e2e8f0;  color:#94a3b8; }
+.grupo-chip.chip-activo  { background:#0047AB; border-color:#0047AB;  color:#fff; }
+.chip-flag { font-size:18px; }
+.chip-info { flex:1; min-width:0; }
+.chip-num  { font-size:13px; font-weight:800; line-height:1; }
+.chip-status { font-size:10px; opacity:.8; margin-top:1px; }
+.chip-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.chip-ok   .chip-dot { background:#1a7a4a; }
+.chip-parcial .chip-dot { background:#c9a227; }
+.chip-vacio   .chip-dot { background:#cbd5e1; }
+.chip-activo  .chip-dot { background:#fff; }
+</style>
+
+<!-- ══════════════════════════════════════════════
+     CABECERA
+══════════════════════════════════════════════ -->
+<div class="insc-header">
+  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div class="insc-badge">&#x1F4CB; INSCRIPCION OFICIAL</div>
+    <div class="admin-badge">&#x1F6E1;&#xFE0F; Modo Administrador</div>
+  </div>
+  <h1>&#x1F3C6; Mundial GABO 2026</h1>
+  <p>I.E. GABO &middot; Cartago, Valle del Cauca &middot; Jornada Tarde &mdash; Revisa y completa las inscripciones por grupo</p>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     BANNER DE ROL ACTIVO (RBAC)
+══════════════════════════════════════════════ -->
+<div id="rbac-banner" style="display:none;margin-bottom:14px"></div>
+
+<!-- Alerta específica para cambios de capitán pendientes de aprobación -->
+<div id="alerta-capitan-pendiente" class="alerta-todo" style="display:none;margin-bottom:14px;border-color:#0047AB;background:#e8f0fb">
+  🏅 <div>Tus cambios están guardados localmente como <strong>Pendientes de Aprobación</strong>. El administrador los revisará y autorizará antes de aplicarlos definitivamente.</div>
+</div>
+
+<!-- Contenedor del formulario — oculto para Público -->
+<div id="insc-formulario">
+
+<!-- ══════════════════════════════════════════════
+     PANEL DE GRUPOS (selector visual)
+══════════════════════════════════════════════ -->
+<div class="insc-card" id="panel-grupos">
+  <div class="insc-card-title">
+    <div class="title-icon">&#x1F5FA;&#xFE0F;</div>
+    Selecciona el grupo a revisar
+    <span class="autosave-badge" id="autosave-badge"></span>
+  </div>
+  <div id="toast-global" class="insc-toast toast-error" style="margin-bottom:12px">
+    <span class="insc-toast-icon">⚠️</span>
+    <span class="insc-toast-body" id="toast-global-msg"></span>
+    <button class="insc-toast-close" onclick="cerrarToast('toast-global')">✕</button>
+  </div>
+  <div class="grupos-progress" id="grupos-progress"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     FORMULARIO POR PASOS
+══════════════════════════════════════════════ -->
+<div id="panel-formulario" style="display:none">
+
+  <!-- TABS DE PASOS -->
+  <div class="pasos">
+    <div class="paso-tab activo" id="tab-paso-1"><span class="paso-num">1</span><span class="paso-check">✓</span>Equipo</div>
+    <div class="paso-tab"        id="tab-paso-3"><span class="paso-num">2</span><span class="paso-check">✓</span>Jugadores</div>
+    <div class="paso-tab"        id="tab-paso-4"><span class="paso-num">3</span><span class="paso-check">✓</span>Confirmar</div>
+  </div>
+
+  <!-- ── PASO 1: EQUIPO ── -->
+  <div id="paso-1">
+    <div id="toast-paso1" class="insc-toast toast-error">
+      <span class="insc-toast-icon">⚠️</span>
+      <span class="insc-toast-body" id="toast-paso1-msg"></span>
+      <button class="insc-toast-close" onclick="cerrarToast('toast-paso1')">✕</button>
+    </div>
+
+    <!-- Chip del grupo activo -->
+    <div id="grupo-activo-banner" style="background:linear-gradient(135deg,#0047AB0D,#0060d40D);border:1.5px solid #0047AB33;border-radius:13px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="banner-bandera" style="font-size:36px;line-height:1"></div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#0047AB;text-transform:uppercase;letter-spacing:.07em">Editando grupo</div>
+          <div id="banner-grupo-nombre" style="font-size:20px;font-weight:800;color:#0d1117"></div>
+          <div id="banner-pais" style="font-size:12px;color:#475569;margin-top:1px"></div>
+        </div>
+      </div>
+      <button onclick="volverAGrupos()" style="padding:8px 16px;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:#475569">
+        ← Cambiar grupo
+      </button>
+    </div>
+
+    <div id="alerta-pendientes-equipo" class="alerta-todo" style="display:none">
+      ⚠️ <div>Hay <span class="alerta-todo-count" id="count-pendientes-equipo">0</span> campos marcados como <strong>pendientes de revisión</strong> (resaltados en amarillo). Completa o corrige antes de continuar.</div>
+    </div>
+
+    <div class="insc-card">
+      <div class="insc-card-title"><div class="title-icon">&#x1F3EB;</div>Datos del equipo</div>
+
+      <div class="grid-2">
+        <div class="campo-grupo">
+          <label class="campo-label">Deporte <span class="req">*</span></label>
+          <div class="deporte-cards" id="deporte-cards">
+            <div style="grid-column:1/-1;font-size:13px;color:#94a3b8;padding:12px;text-align:center;border:1.5px dashed #e2e8f0;border-radius:10px">
+              Selecciona primero el grupo.
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="campo-grupo">
+            <label class="campo-label">Capit&aacute;n/a <span class="req">*</span></label>
+            <input type="text" class="campo-input" id="inp-capitan" placeholder="Nombre completo" maxlength="60" onblur="mayusInput(this);autoguardar()">
+          </div>
+          <div id="grupo-deporte-estado" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="campo-grupo">
+          <label class="campo-label">Nombre de la delegaci&oacute;n</label>
+          <input type="text" class="campo-input" id="inp-nombre" placeholder="Ej: Los Imparables 301" maxlength="40" onblur="mayusInput(this);autoguardar()">
+          <div class="campo-hint">Opcional &mdash; nombre creativo del equipo</div>
+        </div>
+        <div class="campo-grupo">
+          <label class="campo-label">Color de camiseta</label>
+          <input type="text" class="campo-input" id="inp-color" placeholder="Ej: Azul con blanco" maxlength="30" onblur="mayusInput(this);autoguardar()">
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-btns">
+      <button class="btn-anterior" onclick="volverAGrupos()">&#x2190; Grupos</button>
+      <button class="btn-siguiente" onclick="irPaso(3)">Siguiente: Jugadores &#x2192;</button>
+    </div>
+  </div>
+
+  <!-- PASO 2 placeholder (eliminado) -->
+  <div id="paso-2" style="display:none"></div>
+
+  <!-- ── PASO 3: JUGADORES ── -->
+  <div id="paso-3" style="display:none">
+    <div id="toast-paso3" class="insc-toast toast-error">
+      <span class="insc-toast-icon">⚠️</span>
+      <span class="insc-toast-body" id="toast-paso3-msg"></span>
+      <button class="insc-toast-close" onclick="cerrarToast('toast-paso3')">✕</button>
+    </div>
+
+    <!-- Banner de contexto: grupo + deporte activo + botón cambiar -->
+    <div id="banner-deporte-activo" style="background:#fff;border:1.5px solid #e2e8f0;border-radius:13px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="banner-deporte-icono" style="font-size:28px;line-height:1">⚽</div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em">Jugadores del equipo</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+            <span id="banner-deporte-nombre" style="font-size:16px;font-weight:800;color:#0047AB"></span>
+            <span id="banner-deporte-grupo" style="font-size:13px;color:#64748b;font-weight:600"></span>
+          </div>
+          <div id="banner-deporte-otro" style="font-size:11px;color:#94a3b8;margin-top:2px"></div>
+        </div>
+      </div>
+      <button id="btn-cambiar-deporte" onclick="cambiarDeporte()" style="padding:8px 14px;border:1.5px solid #0047AB;border-radius:10px;background:#f0f5ff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;color:#0047AB;display:none">
+        🔄 Cambiar a <span id="btn-cambiar-deporte-label"></span>
+      </button>
+    </div>
+
+    <div id="alerta-pendientes-jugadores" class="alerta-todo" style="display:none">
+      ⚠️ <div>Hay <span class="alerta-todo-count" id="count-pendientes-jug">0</span> jugadores con datos pendientes (fila amarilla). Completa los campos antes de confirmar.</div>
+    </div>
+
+    <div class="insc-card">
+      <div class="insc-card-title">
+        <div class="title-icon">👥</div>
+        Lista de jugadores
+        <span class="autosave-badge" id="autosave-badge-jug"></span>
+      </div>
+      <div id="regla-genero-aviso" style="background:#e8f0fb;border-radius:11px;padding:10px 14px;font-size:12px;color:#0047AB;margin-bottom:14px;display:none">
+        ⚽ <strong>Regla obligatoria:</strong> mínimo <strong id="min-mujeres-texto">2 jugadoras</strong> para Fútsal.
+      </div>
+      <div class="jugadores-lista" id="jugadores-lista"></div>
+      <button class="btn-agregar-jugador" onclick="agregarJugador()">+ Agregar jugador/a</button>
+      <div class="alerta-genero" id="alerta-mujer" style="display:none">
+        ⚠️ <div><strong>Faltan jugadoras.</strong><br>Mínimo <span id="alerta-min-num">2</span> femenina(s) para este deporte.</div>
+      </div>
+      <div class="jugadores-stats">
+        <div class="jug-stat" id="stat-total">
+          <div class="jug-stat-num" id="contador-jugadores">0</div>
+          <div class="jug-stat-lbl">Jugadores</div>
+        </div>
+        <div class="jug-stat" id="stat-mujeres">
+          <div class="jug-stat-num" id="contador-mujeres">0</div>
+          <div class="jug-stat-lbl">Jugadoras</div>
+        </div>
+        <div class="jug-stat" id="stat-requerido" style="display:none">
+          <div class="jug-stat-num" id="stat-req-num">2</div>
+          <div class="jug-stat-lbl">Mín. requeridas</div>
+        </div>
+        <div class="jug-stat" id="stat-pendientes">
+          <div class="jug-stat-num" id="contador-pendientes">0</div>
+          <div class="jug-stat-lbl">Pendientes</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn-anterior" onclick="irPaso(1)">&#x2190; Anterior</button>
+      <button class="btn-siguiente" onclick="irPaso(4)">Revisar y confirmar &#x2192;</button>
+    </div>
+  </div>
+
+  <!-- ── PASO 4: CONFIRMAR ── -->
+  <div id="paso-4" style="display:none">
+    <div class="estado-envio" id="estado-envio">
+      <div class="estado-spinner" id="env-spinner"></div>
+      <div id="env-icono" style="display:none"></div>
+      <div id="env-titulo" style="font-size:18px;font-weight:700;margin-bottom:8px"></div>
+      <div id="env-mensaje" style="font-size:14px;color:#475569"></div>
+      <button id="env-btn-nuevo" onclick="volverAGrupos()"
+        style="margin-top:20px;padding:10px 24px;border:none;border-radius:11px;background:#0047AB;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:none">
+        Revisar otro grupo
+      </button>
+      <button id="env-btn-editar" onclick="volverAEditar()"
+        style="margin-top:10px;padding:10px 24px;border:1.5px solid #e2e8f0;border-radius:11px;background:#fff;color:#475569;font-size:14px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:none">
+        ✏️ Editar y corregir
+      </button>
+    </div>
+    <div id="vista-previa">
+      <div class="insc-card">
+        <div class="insc-card-title">
+          <div class="title-icon">✅</div>Resumen de inscripción
+          <button id="btn-ver-ambos" onclick="toggleAmbosEquipos()"
+            style="margin-left:auto;padding:6px 14px;border:1.5px solid #0047AB;border-radius:9px;background:#f0f5ff;color:#0047AB;font-size:12px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+            👥 Ver ambos equipos del grupo
+          </button>
+        </div>
+
+        <!-- Panel: ambos equipos del grupo -->
+        <div id="panel-ambos-equipos" style="display:none;margin-bottom:16px">
+          <div style="background:#e8f0fb;border:1.5px solid #0047AB33;border-radius:13px;padding:14px 16px;margin-bottom:12px">
+            <div style="font-size:12px;font-weight:700;color:#0047AB;margin-bottom:10px">📋 TODOS LOS EQUIPOS DEL GRUPO <span id="ambos-grupo-label"></span></div>
+            <div id="ambos-contenido" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="text-align:center;color:#94a3b8;font-size:12px;padding:16px;grid-column:1/-1">Cargando...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="resumen-card" id="resumen-equipo"></div>
+        <div style="margin-top:14px">
+          <div style="font-size:13px;font-weight:700;color:#0d1117;margin-bottom:10px">👥 Jugadores</div>
+          <div id="resumen-jugadores"></div>
+        </div>
+        <div class="alerta-genero" id="resumen-alerta-mujer" style="display:none;margin-top:12px">
+          ⚠️ <div><strong>Advertencia:</strong> Sin jugadoras. El equipo no podrá competir.</div>
+        </div>
+      </div>
+      <div class="insc-card" style="background:#f8fafc">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <input type="checkbox" id="chk-declaracion" style="margin-top:3px;width:16px;height:16px;flex-shrink:0">
+          <label for="chk-declaracion" style="font-size:13px;color:#475569;cursor:pointer">
+            Confirmo que los datos son correctos y el equipo queda inscrito en el <strong>Mundial GABO 2026</strong>.
+          </label>
+        </div>
+      </div>
+      <div class="nav-btns">
+        <button class="btn-anterior" onclick="irPaso(3)">← Editar jugadores</button>
+        <button class="btn-enviar" id="btn-enviar" onclick="enviarInscripcion()">🏆 Guardar inscripción</button>
+      </div>
+    </div>
+  </div>
+</div><!-- fin panel-formulario -->
+</div><!-- fin modulo-inscripcion -->
+
+<script>
+// flagImg global de Shell.html
+
+(function(){
+'use strict';
+
+// ══════════════════════════════════════════════
+// DATOS PRE-CARGADOS DE LAS PLANILLAS
+// Orden: 301→302→303→304→401→402→403→404→501...
+// ══════════════════════════════════════════════
+var DATOS_PLANILLAS = {
+  "301_MF": { grupo:"301", deporte:"Mini Futsal", nombre_equipo:"", capitan:"Medison Montoya", color_camiseta:"",
+    jugadores:[
+      {nombre_completo:"Medison Montoya",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Ian Gamez Mayo",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Jacobs Morales Purlios", genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Luciana Duque",          genero:"Femenino", numero_camiseta:"",posicion:"Portero"},
+      {nombre_completo:"Jeronimo Rivera",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Emily Hernandez",        genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Thiago Hernandez",       genero:"Masculino",numero_camiseta:"",posicion:"Portero"},
+      {nombre_completo:"Emiliano Vega",          genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Cristopher Montoya",     genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Jeronimer Zapata",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Juan David Ocampo",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+    ]},
+  "301_MV": { grupo:"301", deporte:"Mini Voleibol", nombre_equipo:"", capitan:"TODO: REVISAR", color_camiseta:"", pendiente:true,
+    jugadores:[
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+    ]},
+  "302_MV": { grupo:"302", deporte:"Mini Voleibol", nombre_equipo:"", capitan:"TODO: REVISAR", color_camiseta:"", pendiente:true,
+    jugadores:[
+      {nombre_completo:"Thiago Corro",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Jeronimo Morin",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Jose Isaac Machado",  genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Salome Gonzalez",     genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Alejandro Caraballo", genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Antonella Aguirre",   genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Isabela Lezcano",     genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Sofia Moreno",        genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Luciana Salazar",     genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"TODO: REVISAR",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+    ]},
+  "303_MV": { grupo:"303", deporte:"Mini Voleibol", nombre_equipo:"", capitan:"TODO: REVISAR", color_camiseta:"", pendiente:true,
+    jugadores:[
+      {nombre_completo:"Ilma Sofia Caseres",   genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Abigail Barrero",      genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Luciano Orozco",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Matias Moreno",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Thiago Eod Gomez",     genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Juan Diego Londono",   genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Jess G. Espejo",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Shainy Ismoel Ocampo", genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Matias T. Velez",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Thiago A. Orango",     genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+    ]},
+  "303_MF": { grupo:"303", deporte:"Mini Futsal", nombre_equipo:"", capitan:"TODO: REVISAR", color_camiseta:"", pendiente:true,
+    jugadores:[
+      {nombre_completo:"Thiago A. Velez T.",   genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Martin Felix",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Salome Herrera",       genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Isabela Estrada",      genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Salome Morena",        genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Valeria Rios Velez",   genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Luciana Jaramillo B.", genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Sharon Patino Parra",  genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Matias Rojas",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Salome Marmolejo",     genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+    ]},
+  "304_MF": { grupo:"304", deporte:"Mini Futsal", nombre_equipo:"", capitan:"TODO: REVISAR", color_camiseta:"", pendiente:true,
+    jugadores:[
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+    ]},
+  "401_MV": { grupo:"401", deporte:"Mini Voleibol", nombre_equipo:"", capitan:"Sara Sofia Amarilla", color_camiseta:"Blanco",
+    jugadores:[
+      {nombre_completo:"Sara Sofia Amarilla",  genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Sara Garcia",          genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Moira Fernando Gomez", genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Marangel Acosta",      genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Valentina Villegas",   genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"TODO: REVISAR",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+    ]},
+  "401_MF": { grupo:"401", deporte:"Mini Futsal", nombre_equipo:"", capitan:"Ismael Espinal", color_camiseta:"Roja España",
+    jugadores:[
+      {nombre_completo:"Manuel Espinal",          genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Juan Jose Espinal",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Juan Antonio Rodriguez",  genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Emiliano Tuinmaqua",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Miguel Angel Cordons",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Lemos Loaiza",            genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jason Manuel Buitrago",   genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Maximiliano Giron Q.",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"TODO: REVISAR",           genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",           genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Sara Sofia Anallo",       genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Maria Fernanda Gomez",    genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+    ]},
+  "402_MV": { grupo:"402", deporte:"Mini Voleibol", nombre_equipo:"", capitan:"TODO: REVISAR", color_camiseta:"", pendiente:true,
+    jugadores:[
+      {nombre_completo:"TODO: REVISAR",genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+    ]},
+  "403_MF": { grupo:"403", deporte:"Mini Futsal", nombre_equipo:"", capitan:"TODO: REVISAR", color_camiseta:"", pendiente:true,
+    jugadores:[
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+    ]},
+  "403_MV": { grupo:"403", deporte:"Mini Voleibol", nombre_equipo:"Los Grandes", capitan:"TODO: REVISAR", color_camiseta:"", pendiente:true,
+    jugadores:[
+      {nombre_completo:"TODO: REVISAR",           genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",           genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",           genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",           genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",           genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Nicole Valeria Calderon", genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"TODO: REVISAR",           genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+    ]},
+  "404_MV": { grupo:"404", deporte:"Mini Voleibol", nombre_equipo:"", capitan:"Emanuel Gomez", color_camiseta:"Blanca",
+    jugadores:[
+      {nombre_completo:"TODO: REVISAR",  genero:"Femenino", numero_camiseta:"8", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",  genero:"Femenino", numero_camiseta:"9", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Javier Siton",   genero:"Masculino",numero_camiseta:"1", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",  genero:"Femenino", numero_camiseta:"13",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",  genero:"Masculino",numero_camiseta:"3", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",  genero:"Masculino",numero_camiseta:"7", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Thiago Hidalgo", genero:"Masculino",numero_camiseta:"8", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Isabela Serna",  genero:"Femenino", numero_camiseta:"2", posicion:"Jugador"},
+      {nombre_completo:"Gabriela Serna", genero:"Femenino", numero_camiseta:"4", posicion:"Jugador"},
+      {nombre_completo:"Emanuel Gomez",  genero:"Masculino",numero_camiseta:"11",posicion:"Capitan"},
+    ]},
+  "404_MF": { grupo:"404", deporte:"Mini Futsal", nombre_equipo:"Tommy FC", capitan:"Tommy Coronel Castillo", color_camiseta:"",
+    jugadores:[
+      {nombre_completo:"Jeronimo Torres",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Nicolas Agente",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Elbert Campos",          genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Salome Contreras",       genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Nicolas Castaneda",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Breyort Alamos",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jean Pierre Lermos",     genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Jhon Will Botero",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Ivan Manuel Compion",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Tommy Coronel Castillo", genero:"Masculino",numero_camiseta:"",posicion:"Capitan"},
+    ]},
+  "501_FS": { grupo:"501", deporte:"Futsal", nombre_equipo:"", capitan:"Jeronimo Najdo", color_camiseta:"Amarilla",
+    jugadores:[
+      {nombre_completo:"Maximilo Najdo Q.",       genero:"Masculino",numero_camiseta:"22",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jax Alejandro Galindo",   genero:"Masculino",numero_camiseta:"3", posicion:"Jugador"},
+      {nombre_completo:"Sebastian Uribe S.",      genero:"Masculino",numero_camiseta:"4", posicion:"Jugador"},
+      {nombre_completo:"Mathias Haro G.",         genero:"Masculino",numero_camiseta:"5", posicion:"Jugador"},
+      {nombre_completo:"Cristopher Jose Lopez G.",genero:"Masculino",numero_camiseta:"6", posicion:"Portero"},
+      {nombre_completo:"Jedicamble Cule H.",      genero:"Masculino",numero_camiseta:"7", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jacobo Copin Correa",     genero:"Masculino",numero_camiseta:"1", posicion:"Jugador"},
+      {nombre_completo:"Juan Sebastian Mejia R.", genero:"Masculino",numero_camiseta:"9", posicion:"Jugador"},
+      {nombre_completo:"Miguel Undercus S.",      genero:"Masculino",numero_camiseta:"9", posicion:"Jugador",pendiente:true},
+    ]},
+  "501_VB": { grupo:"501", deporte:"Voleibol", nombre_equipo:"", capitan:"Maria Jose Lizalda Lorch", color_camiseta:"Amarilla",
+    jugadores:[
+      {nombre_completo:"Maria Jose Lizalda Lorch", genero:"Femenino",numero_camiseta:"1", posicion:"Capitan"},
+      {nombre_completo:"Dulce Maria Galindo H.",   genero:"Femenino",numero_camiseta:"2", posicion:"Jugador"},
+      {nombre_completo:"Nicole Gomez Piedra",      genero:"Femenino",numero_camiseta:"3", posicion:"Jugador"},
+      {nombre_completo:"Gabriela Maria Gonzalez",  genero:"Femenino",numero_camiseta:"4", posicion:"Jugador"},
+      {nombre_completo:"Maura Sloma Gonzalez L.",  genero:"Femenino",numero_camiseta:"5", posicion:"Jugador"},
+      {nombre_completo:"Dany Gabriela Hoyos G.",   genero:"Femenino",numero_camiseta:"6", posicion:"Jugador"},
+      {nombre_completo:"Zara Horn Rivera",         genero:"Femenino",numero_camiseta:"7", posicion:"Jugador"},
+      {nombre_completo:"Antonella Montoya R.",     genero:"Femenino",numero_camiseta:"8", posicion:"Jugador"},
+      {nombre_completo:"Marlino Perez Angarita",   genero:"Femenino",numero_camiseta:"9", posicion:"Jugador"},
+      {nombre_completo:"Luciana Valderrama S.",    genero:"Femenino",numero_camiseta:"10",posicion:"Jugador"},
+    ]},
+  "502_VB": { grupo:"502", deporte:"Voleibol", nombre_equipo:"", capitan:"Laurent Sofia Castablanco", color_camiseta:"Verde rojo",
+    jugadores:[
+      {nombre_completo:"Tiffany Guevara",      genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Melany Ballesteros",   genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Antonio Maron",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Anthonella Restrepo",  genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Barbara Victoria",     genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Geronimo Garcia",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Cristopher Maldonado", genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Mateas Aponte",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Laurent Sofia C.",     genero:"Femenino", numero_camiseta:"",posicion:"Capitan"},
+      {nombre_completo:"Mateas Montermoso",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Melany Orola",         genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Simon Bustos",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+    ]},
+  "502_FS": { grupo:"502", deporte:"Futsal", nombre_equipo:"", capitan:"Geronimo Garcia", color_camiseta:"Verde rojo",
+    jugadores:[
+      {nombre_completo:"Geronimo Garcia",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Juan Andres B.",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Simon Bustos",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Cristopher Maldonado", genero:"Masculino",numero_camiseta:"",posicion:"Portero"},
+      {nombre_completo:"Matias Montermoso",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Lucia Carvallo",       genero:"Femenino", numero_camiseta:"",posicion:"Portero"},
+      {nombre_completo:"Matias Aponte",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Alejandro Zapata",     genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Juan Jose Baquero",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Juan Jose Valencia",   genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Esteban Ordoñez",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Circlei Torres",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jared Giraldo Lopez",  genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+    ]},
+  "503_FS": { grupo:"503", deporte:"Futsal", nombre_equipo:"Los Alemanes", capitan:"David Alejandro F.", color_camiseta:"Blanco y roja",
+    jugadores:[
+      {nombre_completo:"Samuel Penilo",         genero:"Masculino",numero_camiseta:"",posicion:"Portero"},
+      {nombre_completo:"Jeronimo Nieto",        genero:"Masculino",numero_camiseta:"",posicion:"Portero"},
+      {nombre_completo:"Emanuel Ocampo Mena",   genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"David Alejandro F.",    genero:"Masculino",numero_camiseta:"",posicion:"Capitan"},
+      {nombre_completo:"Matias Murillo C.",     genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Juan Manuel Restrepo",  genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Nicolas Oyola",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Matias Morales",        genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Angdo Guzman",          genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jeronimo Inza",         genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Luciana Garcia",        genero:"Femenino", numero_camiseta:"",posicion:"Jugador"},
+    ]},
+  "504_VB": { grupo:"504", deporte:"Voleibol", nombre_equipo:"Mexico", capitan:"Matias Garcia L.", color_camiseta:"Azul y negro",
+    jugadores:[
+      {nombre_completo:"Mathias Garcia L.",    genero:"Masculino",numero_camiseta:"10",posicion:"Jugador"},
+      {nombre_completo:"Sofia Garcia Y.",      genero:"Femenino", numero_camiseta:"6", posicion:"Jugador"},
+      {nombre_completo:"Demay Largo Z.",       genero:"Femenino", numero_camiseta:"7", posicion:"Jugador"},
+      {nombre_completo:"Juliana Gil M.",       genero:"Femenino", numero_camiseta:"2", posicion:"Jugador"},
+      {nombre_completo:"Abril Villavicencio",  genero:"Femenino", numero_camiseta:"3", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Gabriela Caceres",     genero:"Femenino", numero_camiseta:"1", posicion:"Jugador"},
+      {nombre_completo:"Yesua Jimenez",        genero:"Masculino",numero_camiseta:"11",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Charlize Cuellar",     genero:"Femenino", numero_camiseta:"67",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Dilan Bahena Tamayo E.",genero:"Femenino", numero_camiseta:"9", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Sampam Guilensolas",   genero:"Masculino",numero_camiseta:"20",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Cristel C. Rincon",    genero:"Femenino", numero_camiseta:"40",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",        genero:"Masculino",numero_camiseta:"9", posicion:"Jugador",pendiente:true},
+    ]},
+  "504_FS": { grupo:"504", deporte:"Futsal", nombre_equipo:"Mexico", capitan:"Emanuel Guzman Hidalgo", color_camiseta:"Azul y negro",
+    jugadores:[
+      {nombre_completo:"Emanuel Guzman",           genero:"Masculino",numero_camiseta:"9", posicion:"Jugador"},
+      {nombre_completo:"Constantino Balcells L.",  genero:"Masculino",numero_camiseta:"28",posicion:"Jugador"},
+      {nombre_completo:"Juan Jose Castaño G.",     genero:"Masculino",numero_camiseta:"5", posicion:"Jugador"},
+      {nombre_completo:"Nade Armando Sanchez R.",  genero:"Masculino",numero_camiseta:"7", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Islan Leison",             genero:"Masculino",numero_camiseta:"16",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jemima Herma",             genero:"Femenino", numero_camiseta:"10",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Gabriela Carreon",         genero:"Femenino", numero_camiseta:"23",posicion:"Jugador"},
+      {nombre_completo:"Michelle Maculano",        genero:"Femenino", numero_camiseta:"15",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Tualiun Punda M.",         genero:"Masculino",numero_camiseta:"19",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Hernandez Gonzalez L.",    genero:"Masculino",numero_camiseta:"1", posicion:"Jugador"},
+    ]},
+  "601_FS": { grupo:"601", deporte:"Futsal", nombre_equipo:"", capitan:"Miguel Enrique Garcia", color_camiseta:"Azul con blanco",
+    jugadores:[
+      {nombre_completo:"Miguel Enrique Garcia",   genero:"Masculino",numero_camiseta:"10",posicion:"Jugador"},
+      {nombre_completo:"Anthony Escobar Wiloche", genero:"Masculino",numero_camiseta:"1", posicion:"Portero"},
+      {nombre_completo:"Mathias Reina",           genero:"Masculino",numero_camiseta:"11",posicion:"Jugador"},
+      {nombre_completo:"Alexandra Bermudez",      genero:"Femenino", numero_camiseta:"4", posicion:"Jugador"},
+      {nombre_completo:"Samuel Rios Zuluaga",     genero:"Masculino",numero_camiseta:"7", posicion:"Jugador"},
+      {nombre_completo:"Samuel Acevedo",          genero:"Masculino",numero_camiseta:"17",posicion:"Jugador"},
+      {nombre_completo:"Santiago Castillo",       genero:"Masculino",numero_camiseta:"9", posicion:"Jugador"},
+      {nombre_completo:"Juan Camilo",             genero:"Masculino",numero_camiseta:"5", posicion:"Jugador"},
+      {nombre_completo:"Dylan Restrepo",          genero:"Masculino",numero_camiseta:"77",posicion:"Jugador"},
+      {nombre_completo:"Juan Jose Hoyas",         genero:"Masculino",numero_camiseta:"15",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Karen Conquin",           genero:"Femenino", numero_camiseta:"12",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Estella Cardona",         genero:"Femenino", numero_camiseta:"2", posicion:"Jugador"},
+    ]},
+  "601_VB": { grupo:"601", deporte:"Voleibol", nombre_equipo:"", capitan:"Karen Cañaveral", color_camiseta:"Azul con Argentina",
+    jugadores:[
+      {nombre_completo:"Karen Cañaveral",        genero:"Femenino", numero_camiseta:"12",posicion:"Capitan"},
+      {nombre_completo:"Luciana Ceballos",       genero:"Femenino", numero_camiseta:"10",posicion:"Jugador"},
+      {nombre_completo:"Emily Restrepo",         genero:"Femenino", numero_camiseta:"27",posicion:"Jugador"},
+      {nombre_completo:"Samuel Acevedo Mera",    genero:"Masculino",numero_camiseta:"17",posicion:"Jugador"},
+      {nombre_completo:"Anthony Escobar Wiloch", genero:"Masculino",numero_camiseta:"1", posicion:"Jugador"},
+      {nombre_completo:"Miguel Enrique Garcia",  genero:"Masculino",numero_camiseta:"11",posicion:"Jugador"},
+      {nombre_completo:"Estefania M. Alzate R.", genero:"Femenino", numero_camiseta:"9", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Onaires Ortiz",          genero:"Masculino",numero_camiseta:"5", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Dylan Restrepo",         genero:"Masculino",numero_camiseta:"4", posicion:"Jugador"},
+      {nombre_completo:"Mathias Reina",          genero:"Masculino",numero_camiseta:"19",posicion:"Jugador"},
+      {nombre_completo:"Salome Piedrahita",      genero:"Femenino", numero_camiseta:"11",posicion:"Jugador"},
+      {nombre_completo:"Melliton Sanchez",       genero:"Masculino",numero_camiseta:"4", posicion:"Jugador",pendiente:true},
+    ]},
+  "602_FS": { grupo:"602", deporte:"Futsal", nombre_equipo:"Los Brazucas F.C.", capitan:"TODO: REVISAR", color_camiseta:"Vino/amarilla", pendiente:true,
+    jugadores:[
+      {nombre_completo:"Santiago Jimenez", genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Conrand Lopez",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Matthias Fac",     genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Mulix Dosal",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Luiys Lateb",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Luis Figon",       genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Samuel Ramirez",   genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Wilson Jaen",      genero:"Masculino",numero_camiseta:"",posicion:"Jugador"},
+      {nombre_completo:"Joel",             genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Paulas",           genero:"Femenino", numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",    genero:"Masculino",numero_camiseta:"",posicion:"Jugador",pendiente:true},
+    ]},
+  "603_VB": { grupo:"603", deporte:"Voleibol", nombre_equipo:"Galaxias de DC", capitan:"TODO: REVISAR", color_camiseta:"Blanca", pendiente:true,
+    jugadores:[
+      {nombre_completo:"Carly Amareva B.G.", genero:"Femenino", numero_camiseta:"7", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Fred Santiago",      genero:"Masculino",numero_camiseta:"5", posicion:"Jugador"},
+      {nombre_completo:"Ruth Londoño",       genero:"Femenino", numero_camiseta:"12",posicion:"Jugador"},
+      {nombre_completo:"Samuel Cordero",     genero:"Masculino",numero_camiseta:"10",posicion:"Jugador"},
+      {nombre_completo:"Sabras Carraca",     genero:"Femenino", numero_camiseta:"6", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Luciana Ligia Flaez",genero:"Femenino", numero_camiseta:"2", posicion:"Jugador"},
+      {nombre_completo:"Sara Cordoba",       genero:"Femenino", numero_camiseta:"3", posicion:"Jugador"},
+      {nombre_completo:"Sorel Montoya",      genero:"Femenino", numero_camiseta:"1", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jacobo Giraldo",     genero:"Masculino",numero_camiseta:"28",posicion:"Jugador"},
+      {nombre_completo:"Carlos Renteria",    genero:"Masculino",numero_camiseta:"14",posicion:"Jugador"},
+    ]},
+  "603_FS": { grupo:"603", deporte:"Futsal", nombre_equipo:"Estados Unidos", capitan:"Juan Esteban Galvis", color_camiseta:"Blanca",
+    jugadores:[
+      {nombre_completo:"Juan Esteban Galvis",  genero:"Masculino",numero_camiseta:"10",posicion:"Jugador"},
+      {nombre_completo:"Samuel Cardenas",      genero:"Masculino",numero_camiseta:"7", posicion:"Jugador"},
+      {nombre_completo:"Nicolas Carrasquilla", genero:"Masculino",numero_camiseta:"6", posicion:"Jugador"},
+      {nombre_completo:"David Jaramillo",      genero:"Masculino",numero_camiseta:"9", posicion:"Jugador"},
+      {nombre_completo:"Emanuel Salazar",      genero:"Masculino",numero_camiseta:"19",posicion:"Jugador"},
+      {nombre_completo:"Emanuel Arenas",       genero:"Masculino",numero_camiseta:"1", posicion:"Portero"},
+      {nombre_completo:"Abel Santiago Naya",   genero:"Masculino",numero_camiseta:"8", posicion:"Jugador"},
+      {nombre_completo:"Samuel Cardona",       genero:"Masculino",numero_camiseta:"21",posicion:"Jugador"},
+    ]},
+  "702_FS": { grupo:"702", deporte:"Futsal", nombre_equipo:"Brazil", capitan:"Santiago Cuero", color_camiseta:"Blanca",
+    jugadores:[
+      {nombre_completo:"Santiago Cuero Lopez",  genero:"Masculino",numero_camiseta:"17",posicion:"Jugador"},
+      {nombre_completo:"Matias Castro Correa",  genero:"Masculino",numero_camiseta:"10",posicion:"Jugador"},
+      {nombre_completo:"Samuel Guerrero",       genero:"Masculino",numero_camiseta:"14",posicion:"Jugador"},
+      {nombre_completo:"Julio Andersorregu",    genero:"Masculino",numero_camiseta:"1", posicion:"Portero",pendiente:true},
+      {nombre_completo:"Francis Valverde",      genero:"Masculino",numero_camiseta:"9", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Juan David Martinez",   genero:"Masculino",numero_camiseta:"11",posicion:"Jugador"},
+      {nombre_completo:"Kalemi Alzate Torres",  genero:"Femenino", numero_camiseta:"7", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",         genero:"Femenino", numero_camiseta:"3", posicion:"Jugador",pendiente:true},
+      {nombre_completo:"TODO: REVISAR",         genero:"Femenino", numero_camiseta:"16",posicion:"Jugador",pendiente:true},
+    ]},
+  "703_FS": { grupo:"703", deporte:"Futsal", nombre_equipo:"Selección de Venezuela", capitan:"Maximiliano Zapata V.", color_camiseta:"Vino tinto",
+    jugadores:[
+      {nombre_completo:"Juan Manuel Cruz Paz",  genero:"Masculino",numero_camiseta:"2", posicion:"Jugador"},
+      {nombre_completo:"Arith David Sanchez",   genero:"Masculino",numero_camiseta:"10",posicion:"Jugador"},
+      {nombre_completo:"Andrew Samuel Orozco",  genero:"Masculino",numero_camiseta:"4", posicion:"Jugador"},
+      {nombre_completo:"Maximiliano Zapata V.", genero:"Masculino",numero_camiseta:"8", posicion:"Capitan"},
+      {nombre_completo:"Rue Andres Atobian V.", genero:"Masculino",numero_camiseta:"10",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Elmo Bedoya Betancourt",genero:"Masculino",numero_camiseta:"7", posicion:"Jugador"},
+      {nombre_completo:"Isabella Rodriguez",    genero:"Femenino", numero_camiseta:"3", posicion:"Jugador"},
+      {nombre_completo:"Cristopher Velez G.",   genero:"Masculino",numero_camiseta:"1", posicion:"Portero"},
+      {nombre_completo:"TODO: REVISAR",         genero:"Masculino",numero_camiseta:"",  posicion:"Jugador",pendiente:true},
+    ]},
+  "703_VB": { grupo:"703", deporte:"Voleibol", nombre_equipo:"Volei Club Venezuela", capitan:"Manuela Novoa", color_camiseta:"Vino tinto",
+    jugadores:[
+      {nombre_completo:"Manuela Novoa",         genero:"Femenino", numero_camiseta:"1", posicion:"Capitan"},
+      {nombre_completo:"Isabella Rodriguez G.", genero:"Femenino", numero_camiseta:"20",posicion:"Jugador"},
+      {nombre_completo:"Allison Matta",         genero:"Femenino", numero_camiseta:"4", posicion:"Jugador"},
+      {nombre_completo:"Juan Daniel Mazo",      genero:"Masculino",numero_camiseta:"6", posicion:"Jugador"},
+      {nombre_completo:"Nicolas Santiago B.",   genero:"Masculino",numero_camiseta:"8", posicion:"Jugador"},
+      {nombre_completo:"Lizbeth Valverde",      genero:"Femenino", numero_camiseta:"2", posicion:"Jugador"},
+      {nombre_completo:"Cristopher Velez",      genero:"Masculino",numero_camiseta:"7", posicion:"Jugador"},
+      {nombre_completo:"Michelena Osorio",      genero:"Femenino", numero_camiseta:"11",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Maylen Velasquez",      genero:"Femenino", numero_camiseta:"5", posicion:"Jugador"},
+      {nombre_completo:"Valerie Castillo",      genero:"Femenino", numero_camiseta:"14",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Andel Daniel Semper",   genero:"Masculino",numero_camiseta:"63",posicion:"Jugador",pendiente:true},
+    ]},
+  "704_VB": { grupo:"704", deporte:"Voleibol", nombre_equipo:"Colombia", capitan:"Illhan Samuel Gomez", color_camiseta:"Blanca",
+    jugadores:[
+      {nombre_completo:"Illhan Samuel Gomez R.", genero:"Masculino",numero_camiseta:"10",posicion:"Jugador"},
+      {nombre_completo:"Sofia Lopez Bueno",      genero:"Femenino", numero_camiseta:"8", posicion:"Jugador"},
+      {nombre_completo:"Valery Sanchez",         genero:"Femenino", numero_camiseta:"17",posicion:"Jugador"},
+      {nombre_completo:"Nicolas Cardona",        genero:"Masculino",numero_camiseta:"9", posicion:"Jugador"},
+      {nombre_completo:"Anderson Vasquez",       genero:"Masculino",numero_camiseta:"25",posicion:"Jugador"},
+      {nombre_completo:"Juan Garcia Montoya",    genero:"Masculino",numero_camiseta:"",  posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Samuel Ortiz Granillo",  genero:"Masculino",numero_camiseta:"7", posicion:"Jugador"},
+    ]},
+  "704_FS": { grupo:"704", deporte:"Futsal", nombre_equipo:"Colombia", capitan:"Montoya Juanjose", color_camiseta:"Blanca",
+    jugadores:[
+      {nombre_completo:"Wilder Romero",         genero:"Masculino",numero_camiseta:"99",posicion:"Jugador"},
+      {nombre_completo:"Montoya Juanjose",      genero:"Masculino",numero_camiseta:"1", posicion:"Capitan"},
+      {nombre_completo:"Juan David Viego",      genero:"Masculino",numero_camiseta:"00",posicion:"Jugador"},
+      {nombre_completo:"Nicolas Cardona",       genero:"Masculino",numero_camiseta:"11",posicion:"Jugador"},
+      {nombre_completo:"Illhan Samuel",         genero:"Masculino",numero_camiseta:"80",posicion:"Jugador"},
+      {nombre_completo:"Anderson Vasquez Baro", genero:"Masculino",numero_camiseta:"9", posicion:"Jugador"},
+      {nombre_completo:"Abicon Emanuel",        genero:"Masculino",numero_camiseta:"10",posicion:"Jugador",pendiente:true},
+      {nombre_completo:"Jhoan Camilo Martinez", genero:"Masculino",numero_camiseta:"7", posicion:"Jugador"},
+      {nombre_completo:"Samuel Ortiz",          genero:"Masculino",numero_camiseta:"4", posicion:"Jugador"},
+    ]},
+};
+
+// ══════════════════════════════════════════════
+// CONFIGURACIÓN DE GRUPOS
+// ══════════════════════════════════════════════
+var PAISES_INFO = [
+  {grupo:"301",pais:"Francia",    b:"FR"}, {grupo:"302",pais:"Haití",    b:"HT"},
+  {grupo:"303",pais:"Uruguay",    b:"UY"}, {grupo:"304",pais:"Salvador", b:"SV"},
+  {grupo:"401",pais:"España",     b:"ES"}, {grupo:"402",pais:"Paraguay", b:"PY"},
+  {grupo:"403",pais:"Canadá",     b:"CA"}, {grupo:"404",pais:"Colombia", b:"CO"},
+  {grupo:"501",pais:"Ecuador",    b:"EC"}, {grupo:"502",pais:"Portugal", b:"PT"},
+  {grupo:"503",pais:"Alemania",   b:"DE"}, {grupo:"504",pais:"México",   b:"MX"},
+  {grupo:"601",pais:"Argentina",  b:"AR"}, {grupo:"602",pais:"Brasil",   b:"BR"},
+  {grupo:"603",pais:"EEUU",       b:"US"},
+  {grupo:"702",pais:"Rumania",    b:"RO"}, {grupo:"703",pais:"Venezuela",b:"VE"},
+  {grupo:"704",pais:"Perú",       b:"PE"}
+];
+// Orden oficial de grupos
+var ORDEN_GRUPOS = ["301","302","303","304","401","402","403","404","501","502","503","504","601","602","603","702","703","704"];
+var DEPORTES_PRIMARIA     = ["Mini Futsal","Mini Voleibol"];
+var DEPORTES_BACHILLERATO = ["Futsal","Voleibol"];
+var NIVELES = {"3":"Primaria","4":"Primaria","5":"Primaria","6":"Bachillerato","7":"Bachillerato"};
+var CODIGOS_DEPORTE = {"Mini Futsal":"MF","Mini Voleibol":"MV","Futsal":"FS","Voleibol":"VB"};
+var SAVE_KEY = "mundial_gabo_admin_v5"; // bumped: limpia sessionStorage con datos de planilla en caché
+var PASOS_REALES = [1,3,4];
+
+// Estado actual
+var estado = {
+  grupo:"", grado:"", nivel:"", deporte:"", nombre:"", capitan:"", color:"",
+  paisAsignado:null, jugadores:[], paso:1, claveActual:""
+};
+var contadorJugadores = 0;
+
+// ══════════════════════════════════════════════
+// RBAC — Control de Roles y Permisos
+// ROL_ACTUAL: "admin" | "capitan" | "publico"
+// GRUPO_CAPITAN: e.g. "601" (solo si es capitán)
+// ══════════════════════════════════════════════
+var ROL_ACTUAL    = "publico";
+var GRUPO_CAPITAN = "";
+
+/**
+ * Detecta el rol activo comparando PIN del admin y PIN de capitán.
+ * Los PINs de capitán tienen el formato: "CAP_<GRUPO>" (ej: "CAP_601")
+ * almacenados como propiedad "CAPITAN_PIN_601" en PropertiesService,
+ * pero para el frontend basta con detectar el prefijo CAP_ en sessionStorage.
+ */
+function inicializarRol() {
+  // 1. Admin: PIN ya validado por Shell
+  var pinAdmin = window.getAdminPIN ? window.getAdminPIN() : "";
+  if (pinAdmin) {
+    ROL_ACTUAL    = "admin";
+    GRUPO_CAPITAN = "";
+    _aplicarVistaRol();
+    return;
+  }
+
+  // 2. Capitán: PIN "CAP_XXX" guardado en sessionStorage por Shell
+  var pinCap = "";
+  try { pinCap = sessionStorage.getItem("capitan_pin") || ""; } catch(e) {}
+  if (pinCap && pinCap.indexOf("CAP_") === 0) {
+    GRUPO_CAPITAN = pinCap.replace("CAP_", "");
+    ROL_ACTUAL    = "capitan";
+    _aplicarVistaRol();
+    return;
+  }
+
+  // 3. Público: solo lectura protegida
+  ROL_ACTUAL    = "publico";
+  GRUPO_CAPITAN = "";
+  _aplicarVistaRol();
+}
+
+/** Aplica restricciones visuales y funcionales según el rol. */
+function _aplicarVistaRol() {
+  var banner = document.getElementById("rbac-banner");
+  if (!banner) return;
+
+  if (ROL_ACTUAL === "admin") {
+    banner.innerHTML =
+      '<span style="background:#1a7a4a;color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700">🔑 ADMINISTRADOR — Acceso total</span>';
+    banner.style.display = "block";
+    // Habilitar selector de grupo sin restricción
+    var sel = document.getElementById("sel-grupo");
+    if (sel) { sel.disabled = false; sel.style.opacity = "1"; }
+
+  } else if (ROL_ACTUAL === "capitan") {
+    banner.innerHTML =
+      '<span style="background:#0047AB;color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700">🏅 CAPITÁN — Grupo ' + GRUPO_CAPITAN + ' · Cambios requieren aprobación</span>';
+    banner.style.display = "block";
+    // Preseleccionar y bloquear su grupo
+    var selG = document.getElementById("sel-grupo");
+    if (selG) {
+      // Seleccionar el primer deporte del grupo del capitán
+      var opcionCapitan = "";
+      for (var i = 0; i < selG.options.length; i++) {
+        if (selG.options[i].value.indexOf(GRUPO_CAPITAN + "_") === 0) {
+          opcionCapitan = selG.options[i].value;
+          break;
+        }
+      }
+      if (opcionCapitan) {
+        selG.value   = opcionCapitan;
+        selG.disabled = true;
+        selG.style.opacity = "0.7";
+        // Disparar la carga del grupo
+        if (typeof abrirGrupoDesdeSelector === "function") abrirGrupoDesdeSelector(opcionCapitan);
+      }
+    }
+
+  } else {
+    // Público: bloquear todo el módulo
+    banner.innerHTML =
+      '<div style="text-align:center;padding:32px 20px">' +
+      '<div style="font-size:36px;margin-bottom:12px">🔒</div>' +
+      '<div style="font-weight:700;font-size:16px;color:#0d1117;margin-bottom:6px">Acceso Restringido</div>' +
+      '<div style="font-size:13px;color:#64748b">La pestaña de Inscripción requiere autenticación.</div>' +
+      '<div style="font-size:13px;color:#64748b;margin-top:4px">Contacta al administrador del torneo.</div>' +
+      '</div>';
+    banner.style.display   = "block";
+    // Ocultar el formulario completo
+    var form = document.getElementById("insc-formulario");
+    if (form) form.style.display = "none";
+  }
+}
+
+/**
+ * Marca un campo como "pendiente de aprobación" cuando lo edita un capitán.
+ * Se llama desde los handlers onblur de los inputs.
+ */
+function marcarCambioCapitan(campo, valor, clave) {
+  if (ROL_ACTUAL !== "capitan") return;
+  // Guardar cambio local con flag pendiente
+  var cambios = {};
+  try {
+    var raw = sessionStorage.getItem("insc_cambios_" + GRUPO_CAPITAN) || "{}";
+    cambios = JSON.parse(raw);
+  } catch(e) {}
+  if (!cambios[clave]) cambios[clave] = {};
+  cambios[clave][campo] = { valor: valor, pendiente: true, ts: Date.now() };
+  try { sessionStorage.setItem("insc_cambios_" + GRUPO_CAPITAN, JSON.stringify(cambios)); } catch(e) {}
+  // Visual: pintar borde amarillo pendiente
+  var el = document.querySelector("[data-campo='" + campo + "']");
+  if (el) el.classList.add("pendiente");
+  _mostrarAlertaPendienteCapitan();
+}
+
+function _mostrarAlertaPendienteCapitan() {
+  var alerta = document.getElementById("alerta-capitan-pendiente");
+  if (alerta) alerta.style.display = "flex";
+}
+
+/** Devuelve true si el campo actual es editable por el rol activo. */
+function puedeEditar(grupo) {
+  if (ROL_ACTUAL === "admin")   return true;
+  if (ROL_ACTUAL === "capitan") return grupo.indexOf(GRUPO_CAPITAN + "_") === 0 || grupo === GRUPO_CAPITAN;
+  return false;
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+/* flag() removed -> use flagImg */
+function getPaisInfo(grupo){ return PAISES_INFO.find(function(p){return p.grupo===grupo;})||null; }
+function esPendiente(v){ return !v||v.trim()===""||v.indexOf("TODO")!==-1; }
+
+function mostrarToast(id,msg,tipo){
+  var el=document.getElementById(id); if(!el) return;
+  el.className="insc-toast "+(tipo||"toast-error")+" visible";
+  var m=document.getElementById(id+"-msg"); if(m) m.innerHTML=msg;
+  el.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+window.cerrarToast=function(id){ var el=document.getElementById(id); if(el) el.classList.remove("visible"); };
+
+function badge(texto,tipo){
+  var el=document.getElementById("autosave-badge");
+  if(!el) return;
+  el.className="autosave-badge "+(tipo||"guardando"); el.textContent=texto;
+  if(tipo==="guardado") setTimeout(function(){el.className="autosave-badge";},2500);
+}
+
+// ══════════════════════════════════════════════
+// AUTOGUARDADO en sessionStorage
+// ══════════════════════════════════════════════
+function autoguardar(){
+  badge("Guardando...","guardando");
+  try{
+    var datos=cargarEstadoDesdeForm();
+    datos.bd=false; // Borrador manual: NO sobreescribe datos de BD en próxima carga
+    var guardado=JSON.parse(sessionStorage.getItem(SAVE_KEY)||"{}");
+    guardado[estado.claveActual]=datos;
+    sessionStorage.setItem(SAVE_KEY,JSON.stringify(guardado));
+    badge("✓ Guardado","guardado");
+  }catch(e){ badge("",""); }
+}
+window.autoguardar=autoguardar;
+
+function cargarEstadoDesdeForm(){
+  return {
+    grupo:estado.grupo,
+    deporte:estado.deporte,
+    capitan:(document.getElementById("inp-capitan")||{value:""}).value.trim(),
+    nombre:(document.getElementById("inp-nombre")||{value:""}).value.trim(),
+    color:(document.getElementById("inp-color")||{value:""}).value.trim(),
+    jugadores:recopilarJugadores()
+  };
+}
+
+function getBorrador(clave){
+  try{ var s=JSON.parse(sessionStorage.getItem(SAVE_KEY)||"{}"); return s[clave]||null; }
+  catch(e){ return null; }
+}
+
+// ══════════════════════════════════════════════
+// PANEL DE GRUPOS
+// ══════════════════════════════════════════════
+function renderGrupos(){
+  var grid=document.getElementById("grupos-progress");
+  grid.innerHTML="";
+  ORDEN_GRUPOS.forEach(function(grupo){
+    var pi=getPaisInfo(grupo);
+    var fl=pi?flagImg(pi.b):"🏳️";
+    var pais=pi?pi.pais:grupo;
+    var nivel=NIVELES[grupo.charAt(0)]||"";
+    // Contar equipos con datos y pendientes
+    var equiposGrupo=Object.keys(DATOS_PLANILLAS).filter(function(k){return k.startsWith(grupo+"_");});
+    var tieneEquipos=equiposGrupo.length>0;
+    var tienePendientes=equiposGrupo.some(function(k){
+      var eq=DATOS_PLANILLAS[k];
+      if(eq.pendiente||esPendiente(eq.capitan)) return true;
+      return (eq.jugadores||[]).some(function(j){return j.pendiente||esPendiente(j.nombre_completo);});
+    });
+    // Ver si hay borrador guardado
+    var tieneBorrador=equiposGrupo.some(function(k){return !!getBorrador(k);});
+    var chipClass = !tieneEquipos ? "chip-vacio" : tienePendientes ? "chip-parcial" : "chip-ok";
+    var statusText = !tieneEquipos ? "Sin planilla" : tienePendientes ? "⚠ Pendientes" : "✓ Completo";
+    if(tieneBorrador && tienePendientes) statusText="💾 Con cambios";
+    var chip=document.createElement("div");
+    chip.className="grupo-chip "+chipClass;
+    chip.innerHTML='<div class="chip-flag">'+fl+'</div>'+
+      '<div class="chip-info">'+
+        '<div class="chip-num">'+grupo+'</div>'+
+        '<div class="chip-status">'+statusText+'</div>'+
+      '</div>'+
+      '<div class="chip-dot"></div>';
+    chip.onclick=function(){ abrirGrupo(grupo); };
+    grid.appendChild(chip);
+  });
+}
+
+// ══════════════════════════════════════════════
+// ABRIR GRUPO — carga datos y muestra formulario
+// ══════════════════════════════════════════════
+function abrirGrupo(grupo){
+  var pi=getPaisInfo(grupo);
+  estado.grupo=grupo;
+  estado.grado=grupo.charAt(0);
+  estado.nivel=NIVELES[estado.grado]||"";
+  estado.paisAsignado=pi?{pais:pi.pais,bandera:pi.b}:null;
+
+  // Actualizar banner
+  document.getElementById("banner-bandera").innerHTML=pi?flagImg(pi.b):"";
+  document.getElementById("banner-grupo-nombre").textContent=grupo+" — "+estado.nivel;
+  document.getElementById("banner-pais").textContent=pi?"🏆 "+pi.pais:"";
+
+  // Renderizar cards de deporte
+  var grado=parseInt(grupo.charAt(0));
+  var deps=grado<=5?DEPORTES_PRIMARIA:DEPORTES_BACHILLERATO;
+  var html="";
+  deps.forEach(function(d){
+    var cod=CODIGOS_DEPORTE[d];
+    var clave=grupo+"_"+cod;
+    var tieneData=!!DATOS_PLANILLAS[clave];
+    var tienePend=tieneData&&(DATOS_PLANILLAS[clave].pendiente||
+      (DATOS_PLANILLAS[clave].jugadores||[]).some(function(j){return j.pendiente||esPendiente(j.nombre_completo);}));
+    var iconos={"Mini Futsal":"⚽","Mini Voleibol":"🏐","Futsal":"⚽","Voleibol":"🏐"};
+    var statusIcon=tieneData?(tienePend?"⚠️":"✅"):"📋";
+    html+='<div class="deporte-card'+(estado.deporte===d?" seleccionado":"")+ '" onclick="seleccionarDeporte(\''+d+'\')">'+
+      '<div class="deporte-card-icon">'+(iconos[d]||"🏅")+' '+statusIcon+'</div>'+
+      '<div class="deporte-card-nombre">'+d+'</div>'+
+      '<div class="deporte-card-desc">'+(tieneData?(tienePend?"Datos con pendientes":"Datos completos"):"Sin planilla registrada")+'</div></div>';
+  });
+  document.getElementById("deporte-cards").innerHTML=html;
+  estado.deporte="";
+
+  // Mostrar formulario, ocultar panel grupos
+  document.getElementById("panel-grupos").style.display="none";
+  document.getElementById("panel-formulario").style.display="block";
+  estado.paso=1;
+  PASOS_REALES.forEach(function(p){
+    var t=document.getElementById("tab-paso-"+p);
+    if(t){t.classList.remove("activo","completado");if(p===1)t.classList.add("activo");}
+    var el=document.getElementById("paso-"+p);
+    if(el) el.style.display=p===1?"block":"none";
+  });
+  document.getElementById("paso-2").style.display="none";
+  limpiarFormEquipo();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+window.volverAGrupos=function(){
+  // Cancelar cualquier guardado pendiente antes de cambiar de grupo
+  if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer=null; }
+  _saveInProgress=false;
+  document.getElementById("panel-formulario").style.display="none";
+  document.getElementById("panel-grupos").style.display="block";
+  renderGrupos();
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+
+function limpiarFormEquipo(){
+  // ── Cancelar cualquier guardado pendiente del grupo anterior ──
+  if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer=null; }
+  _saveInProgress=false;
+
+  var inp=document.getElementById("inp-capitan"); if(inp) inp.value="";
+  var inn=document.getElementById("inp-nombre");  if(inn) inn.value="";
+  var inc=document.getElementById("inp-color");   if(inc) inc.value="";
+  document.getElementById("jugadores-lista").innerHTML="";
+  contadorJugadores=0;
+  _deporteEnLista=""; // forzar recarga al entrar al paso 3
+  cerrarToast("toast-paso1");
+  cerrarToast("toast-paso3");
+  document.getElementById("alerta-pendientes-equipo").style.display="none";
+  document.getElementById("alerta-pendientes-jugadores").style.display="none";
+}
+
+// ══════════════════════════════════════════════
+// SELECCIÓN DE DEPORTE — carga datos del Paso 1
+// ══════════════════════════════════════════════
+window.seleccionarDeporte=function(dep){
+  estado.deporte=dep;
+  document.querySelectorAll(".deporte-card").forEach(function(c){
+    c.className="deporte-card"+(c.querySelector(".deporte-card-nombre").textContent===dep?" seleccionado":"");
+  });
+  var cod=CODIGOS_DEPORTE[dep];
+  var clave=estado.grupo+"_"+cod;
+  estado.claveActual=clave;
+
+  limpiarFormEquipo();
+
+  var pin=window.getAdminPIN?window.getAdminPIN():"";
+
+  // ── FUENTE DE VERDAD ÚNICA: IC_Equipos via getDatosEquipoPaso1 ──
+  // Esta función lee directamente el Sheet con normalización de encabezados
+  // y produce logs de diagnóstico. Es la única fuente para el Paso 1.
+  // La planilla hardcodeada solo se usa como fallback si no hay conexión
+  // o si el equipo aún no está inscrito.
+
+  // Mostrar indicador de carga en el campo capitán
+  var divEstado = document.getElementById("grupo-deporte-estado");
+  if(divEstado){
+    divEstado.style.display="flex";
+    divEstado.className="grupo-deporte-estado";
+    divEstado.innerHTML="⏳ Cargando datos de la base de datos...";
+  }
+
+  if(typeof google==="undefined"||!google.script){
+    // Sin conexión: usar planilla como fallback
+    _cargarPaso1DesdePlanilla(clave, dep);
+    if(divEstado) divEstado.style.display="none";
+    return;
+  }
+
+  // Capturar contexto exacto en el momento de la llamada
+  var grupoCapturado   = estado.grupo;
+  var deporteCapturado = dep;
+  var claveCapturada   = clave;
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      // Si el admin cambió de grupo/deporte mientras esperaba, ignorar
+      if(estado.grupo !== grupoCapturado || estado.deporte !== deporteCapturado){
+        return;
+      }
+
+      if(divEstado) divEstado.style.display="none";
+
+      if(res && res.ok && res.datos && res.datos.inscrito){
+        // ── Datos de IC_Equipos: llenar campos directamente ──
+        var d = res.datos;
+        var capEl = document.getElementById("inp-capitan");
+        var nomEl = document.getElementById("inp-nombre");
+        var colEl = document.getElementById("inp-color");
+
+        if(capEl){
+          capEl.value = String(d.capitan || "").trim().toUpperCase();
+          capEl.classList.toggle("pendiente", esPendiente(capEl.value));
+        }
+        if(nomEl){
+          nomEl.value = String(d.nombre_equipo || "").trim().toUpperCase();
+        }
+        if(colEl){
+          colEl.value = String(d.color_camiseta || "").trim().toUpperCase();
+        }
+
+        // Actualizar badge de estado
+        if(divEstado){
+          divEstado.style.display="flex";
+          divEstado.className="grupo-deporte-estado estado-ocupado";
+          divEstado.innerHTML="⛔ Ya inscrito: "+grupoCapturado+" - "+deporteCapturado+' ("'+(d.nombre_equipo||"")+'")';
+        }
+
+        // Guardar snapshot de BD en sessionStorage (bd:true)
+        try{
+          var guardado = JSON.parse(sessionStorage.getItem(SAVE_KEY)||"{}");
+          var actual   = guardado[claveCapturada] || {};
+          actual.bd             = true;
+          actual.capitan        = d.capitan        || "";
+          actual.nombre_equipo  = d.nombre_equipo  || "";
+          actual.color_camiseta = d.color_camiseta || "";
+          actual.grupo          = grupoCapturado;
+          actual.deporte        = deporteCapturado;
+          guardado[claveCapturada] = actual;
+          sessionStorage.setItem(SAVE_KEY, JSON.stringify(guardado));
+        } catch(eSS){}
+
+        // Pre-cargar jugadores vacíos (se llenarán en paso 3 desde BD)
+        estado.jugadores = [];
+
+      } else {
+        // Equipo no inscrito aún: usar planilla como placeholder
+        _cargarPaso1DesdePlanilla(claveCapturada, deporteCapturado);
+        if(divEstado){
+          divEstado.style.display="flex";
+          divEstado.className="grupo-deporte-estado estado-libre";
+          divEstado.innerHTML="✓ Disponible: "+grupoCapturado+" puede inscribirse en "+deporteCapturado;
+        }
+      }
+      actualizarReglaGenero();
+    })
+    .withFailureHandler(function(err){
+      // Error de red: usar planilla como fallback
+      if(estado.grupo !== grupoCapturado || estado.deporte !== deporteCapturado) return;
+      if(divEstado) divEstado.style.display="none";
+      _cargarPaso1DesdePlanilla(claveCapturada, deporteCapturado);
+      console.error("getDatosEquipoPaso1 error:", err);
+      actualizarReglaGenero();
+    })
+    .getDatosEquipoPaso1(grupoCapturado, deporteCapturado);
+
+  actualizarReglaGenero();
+};
+
+// Fallback: cargar datos de planilla hardcodeada cuando no hay BD
+function _cargarPaso1DesdePlanilla(clave, dep){
+  // Intentar borrador de BD primero
+  var borrador = getBorrador(clave);
+  var borradorBD = borrador && borrador.bd === true;
+  var fuente = borradorBD ? borrador : (DATOS_PLANILLAS[clave] || null);
+  if(!fuente) return;
+
+  var cap = document.getElementById("inp-capitan");
+  var nom = document.getElementById("inp-nombre");
+  var col = document.getElementById("inp-color");
+  if(cap){ cap.value=(fuente.capitan||"").toUpperCase(); cap.classList.toggle("pendiente",esPendiente(cap.value)); }
+  if(nom){ nom.value=(fuente.nombre_equipo||fuente.nombre||"").toUpperCase(); }
+  if(col){ col.value=(fuente.color_camiseta||fuente.color||"").toUpperCase(); }
+
+  estado.jugadores=(fuente.jugadores||[]).map(function(j){
+    return { id_jugador:j.id_jugador||"", nombre_completo:j.nombre_completo||"", genero:j.genero||"Masculino", numero_camiseta:j.numero_camiseta||"", posicion:j.posicion||"Jugador", pendiente:!!(j.pendiente||esPendiente(j.nombre_completo)) };
+  });
+}
+
+function verificarDisponibilidad(grupo,deporte){
+  // Esta función solo actualiza el badge de estado visual.
+  // El llenado de campos ahora lo hace seleccionarDeporte via getDatosEquipoPaso1.
+  // Se mantiene para compatibilidad con otros módulos que la llamen directamente.
+  var div=document.getElementById("grupo-deporte-estado");
+  if(!div) return;
+  if(typeof google==="undefined"||!google.script){div.style.display="none";return;}
+  var grupoLocal=grupo, deporteLocal=deporte;
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(estado.grupo!==grupoLocal||estado.deporte!==deporteLocal){div.style.display="none";return;}
+      if(res&&res.ok&&res.datos&&res.datos.inscrito){
+        div.style.display="flex";
+        div.className="grupo-deporte-estado estado-ocupado";
+        div.innerHTML="⛔ Ya inscrito: "+grupoLocal+" - "+deporteLocal+' ("'+(res.datos.nombre_equipo||"")+'")';}
+      else{
+        div.style.display="flex";
+        div.className="grupo-deporte-estado estado-libre";
+        div.innerHTML="✓ Disponible: "+grupoLocal+" puede inscribirse en "+deporteLocal;}
+    })
+    .withFailureHandler(function(){div.style.display="none";})
+    .verificarInscripcion(grupoLocal,deporteLocal);
+}
+
+function actualizarReglaGenero(){
+  var esFutsal=(estado.deporte||"").indexOf("Futsal")!==-1;
+  var av=document.getElementById("regla-genero-aviso");
+  var sr=document.getElementById("stat-requerido");
+  if(av) av.style.display=esFutsal?"block":"none";
+  if(sr) sr.style.display=esFutsal?"block":"none";
+  var min=esFutsal?"2 jugadoras":"1 jugadora";
+  var el;
+  el=document.getElementById("min-mujeres-texto"); if(el) el.textContent=min;
+  el=document.getElementById("alerta-min-num");    if(el) el.textContent=esFutsal?"2":"1";
+  el=document.getElementById("stat-req-num");      if(el) el.textContent=esFutsal?"2":"1";
+}
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════
+function irPaso(num){
+  if(num>estado.paso&&!validarPaso(estado.paso)) return;
+  if(num===2) num=(estado.paso===1)?3:1;
+  document.getElementById("paso-"+estado.paso).style.display="none";
+  estado.paso=num;
+  PASOS_REALES.forEach(function(p){
+    var t=document.getElementById("tab-paso-"+p);
+    if(!t) return;
+    t.classList.remove("activo","completado");
+    if(p===num) t.classList.add("activo");
+    else if(p<num) t.classList.add("completado");
+  });
+  document.getElementById("paso-"+num).style.display="block";
+  if(num===3) renderJugadores();
+  if(num===4) renderResumen();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+window.irPaso=irPaso;
+
+function validarPaso(num){
+  if(num===1){
+    if(!estado.deporte){mostrarToast("toast-paso1","Selecciona el deporte antes de continuar.","toast-error");return false;}
+    var c=(document.getElementById("inp-capitan")||{value:""}).value.trim();
+    if(!c){mostrarToast("toast-paso1","El nombre del capitán/a es obligatorio.","toast-error");return false;}
+    cerrarToast("toast-paso1");
+    estado.capitan=c;
+    estado.nombre=(document.getElementById("inp-nombre")||{value:""}).value.trim();
+    estado.color=(document.getElementById("inp-color")||{value:""}).value.trim();
+    autoguardar();
+    return true;
+  }
+  if(num===3){
+    var j=recopilarJugadores();
+    if(!j.length){mostrarToast("toast-paso3","Agrega al menos un jugador antes de continuar.","toast-error");return false;}
+    cerrarToast("toast-paso3");
+    estado.jugadores=j;
+    autoguardar();
+    return true;
+  }
+  return true;
+}
+
+// ══════════════════════════════════════════════
+// JUGADORES
+// ══════════════════════════════════════════════
+var _deporteEnLista = ""; // rastrea qué deporte está actualmente en el DOM
+
+function actualizarBannerDeporte(){
+  var iconos={"Mini Futsal":"⚽","Mini Voleibol":"🏐","Futsal":"⚽","Voleibol":"🏐"};
+  var grado=parseInt(estado.grupo.charAt(0));
+  var deps=grado<=5?DEPORTES_PRIMARIA:DEPORTES_BACHILLERATO;
+  var otro=deps.filter(function(d){return d!==estado.deporte;})[0]||"";
+  var el;
+  el=document.getElementById("banner-deporte-icono");  if(el) el.textContent=iconos[estado.deporte]||"🏅";
+  el=document.getElementById("banner-deporte-nombre"); if(el) el.textContent=estado.deporte;
+  el=document.getElementById("banner-deporte-grupo");  if(el) el.textContent="— Grupo "+estado.grupo;
+  el=document.getElementById("banner-deporte-otro");
+  if(el) el.textContent=otro?"También puedes editar el equipo de "+otro+" volviendo al paso anterior":"";
+  var btnCambiar=document.getElementById("btn-cambiar-deporte");
+  var btnLabel=document.getElementById("btn-cambiar-deporte-label");
+  if(btnCambiar&&btnLabel&&otro){
+    btnLabel.textContent=otro;
+    btnCambiar.style.display="inline-flex";
+  } else if(btnCambiar){
+    btnCambiar.style.display="none";
+  }
+}
+
+// Cambia al otro deporte del mismo grupo directamente desde paso 3
+window.cambiarDeporte=function(){
+  var grado=parseInt(estado.grupo.charAt(0));
+  var deps=grado<=5?DEPORTES_PRIMARIA:DEPORTES_BACHILLERATO;
+  var otro=deps.filter(function(d){return d!==estado.deporte;})[0];
+  if(!otro) return;
+  // Guardar borrador del equipo actual antes de cambiar
+  autoguardar();
+  // Cambiar al otro deporte — limpiar lista para que se recargue
+  _deporteEnLista="";
+  seleccionarDeporte(otro);
+  // Actualizar cards de deporte en paso 1 para reflejar la selección
+  document.querySelectorAll(".deporte-card").forEach(function(c){
+    var nombre=c.querySelector(".deporte-card-nombre");
+    if(nombre) c.className="deporte-card"+(nombre.textContent===otro?" seleccionado":"");
+  });
+  // Recargar jugadores del nuevo deporte
+  var lista=document.getElementById("jugadores-lista");
+  lista.innerHTML=""; contadorJugadores=0;
+  renderJugadores();
+};
+
+function renderJugadores(){
+  var lista=document.getElementById("jugadores-lista");
+
+  // Solo conservar la lista si el deporte NO cambió (admin volvió del paso 4 al mismo equipo)
+  if(lista.children.length>0 && _deporteEnLista===estado.deporte){
+    actualizarBannerDeporte();
+    actualizarReglaGenero();
+    actualizarContadores();
+    return;
+  }
+
+  // Limpiar lista si el deporte cambió
+  lista.innerHTML=""; contadorJugadores=0;
+  _deporteEnLista=estado.deporte;
+  actualizarBannerDeporte();
+
+  var pin=window.getAdminPIN?window.getAdminPIN():"";
+
+  // ── Cargar desde Apps Script (datos en vivo del Sheet) ──
+  if(typeof google!=="undefined"&&google.script&&estado.grupo&&estado.deporte){
+    lista.innerHTML='<div style="text-align:center;padding:28px 20px;color:#64748b;font-size:13px">'+
+      '<div style="font-size:28px;margin-bottom:10px">⏳</div>'+
+      'Cargando jugadores de <strong>'+estado.deporte+'</strong>...<br>'+
+      '<span style="font-size:11px;color:#94a3b8;margin-top:4px;display:block">Grupo '+estado.grupo+'</span>'+
+      '</div>';
+
+    google.script.run
+      .withSuccessHandler(function(res){
+        lista.innerHTML=""; contadorJugadores=0;
+
+        if(res&&res.ok&&res.datos){
+          var datos=res.datos;
+
+          // ── Datos vienen de IC_Equipos / IC_Jugadores: siempre prevalecen ──
+          if(datos.inscrito){
+            var capEl=document.getElementById("inp-capitan");
+            var nomEl=document.getElementById("inp-nombre");
+            var colEl=document.getElementById("inp-color");
+            // Sobreescribir SIEMPRE con el valor de BD — no importa lo que haya
+            if(capEl){ capEl.value=String(datos.capitan||"").toUpperCase(); if(esPendiente(capEl.value)) capEl.classList.add("pendiente"); else capEl.classList.remove("pendiente"); }
+            if(nomEl&&datos.nombre_equipo) nomEl.value=String(datos.nombre_equipo).toUpperCase();
+            if(colEl&&datos.color_camiseta) colEl.value=String(datos.color_camiseta).toUpperCase();
+          }
+
+          var jugadores=datos.jugadores||[];
+          if(jugadores.length>0){
+            jugadores.forEach(function(j){ agregarJugadorConDatos(j); });
+            // Guardar borrador marcado como bd:true para que la próxima vez no use planilla
+            var snapshot = {
+              bd: true,  // ← marca que este borrador viene de la BD, es confiable
+              grupo: estado.grupo,
+              deporte: estado.deporte,
+              capitan: datos.capitan || "",
+              nombre_equipo: datos.nombre_equipo || "",
+              color_camiseta: datos.color_camiseta || "",
+              jugadores: jugadores
+            };
+            try{
+              var guardado=JSON.parse(sessionStorage.getItem(SAVE_KEY)||"{}");
+              guardado[estado.claveActual]=snapshot;
+              sessionStorage.setItem(SAVE_KEY,JSON.stringify(guardado));
+            }catch(e){}
+            var msg=datos.inscrito
+              ?"✅ "+jugadores.length+" jugadores de <strong>"+estado.deporte+"</strong> cargados desde la base de datos."
+              :"📋 "+jugadores.length+" jugadores cargados desde la planilla física. Completa los pendientes.";
+            mostrarToast("toast-paso3",msg,"toast-ok");
+          } else {
+            cargarJugadoresDesdePlanilla();
+            mostrarToast("toast-paso3","📝 Sin jugadores en BD para <strong>"+estado.deporte+"</strong>. Mostrando planilla física.","toast-warn");
+          }
+        } else {
+          cargarJugadoresDesdePlanilla();
+          mostrarToast("toast-paso3","⚠️ Sin conexión con la base de datos. Mostrando planilla física.","toast-warn");
+        }
+        actualizarBannerDeporte();
+        actualizarReglaGenero();
+        actualizarContadores();
+      })
+      .withFailureHandler(function(err){
+        lista.innerHTML=""; contadorJugadores=0;
+        cargarJugadoresDesdePlanilla();
+        mostrarToast("toast-paso3","⚠️ Error de conexión. Mostrando planilla física.","toast-warn");
+        console.error("getEquipoConJugadores error:",err);
+        actualizarBannerDeporte();
+        actualizarReglaGenero();
+        actualizarContadores();
+      })
+      .getEquipoConJugadores(estado.grupo, estado.deporte, pin);
+    return;
+  }
+  // ── Sin Apps Script (preview/local): usar planilla pre-cargada ──
+  cargarJugadoresDesdePlanilla();
+  actualizarBannerDeporte();
+  actualizarReglaGenero();
+  actualizarContadores();
+}
+
+function cargarJugadoresDesdePlanilla(){
+  var fuente=estado.jugadores&&estado.jugadores.length?estado.jugadores:null;
+  if(fuente){
+    fuente.forEach(function(j){ agregarJugadorConDatos(j); });
+  } else {
+    // Sin datos: 5 filas vacías
+    for(var i=0;i<5;i++) agregarJugador();
+  }
+}
+
+function agregarJugador(){
+  agregarJugadorConDatos(null);
+  // Enfocar el campo nombre de la nueva fila
+  var lista = document.getElementById("jugadores-lista");
+  if(lista && lista.lastElementChild){
+    var ni = lista.lastElementChild.querySelector('[data-campo="nombre"]');
+    if(ni) setTimeout(function(){ ni.focus(); }, 50);
+  }
+}
+window.agregarJugador=agregarJugador;
+
+function agregarJugadorConDatos(datos){
+  contadorJugadores++;
+  var id="jug-"+contadorJugadores;
+  var esPend=datos&&(datos.pendiente||esPendiente(datos.nombre_completo||""));
+  // Guardar id_jugador existente en atributo data para preservarlo al guardar
+  var idJugExistente = datos && datos.id_jugador ? String(datos.id_jugador) : "";
+  var div=document.createElement("div");
+  div.className="jugador-fila"+(esPend?" tiene-pendiente":"");
+  div.id=id;
+  div.setAttribute("data-jug-idx", contadorJugadores);
+  div.setAttribute("data-jug-id", idJugExistente); // ← id_jugador de BD
+  div.innerHTML=
+    '<div class="jugador-num'+(esPend?" pendiente-num":"")+ '" id="num-'+id+'">'+contadorJugadores+'</div>'+
+    '<span class="jug-save-badge" id="badge-'+id+'"></span>'+
+    '<button class="jugador-eliminar" onclick="eliminarJugadorUI(\''+id+'\')">✕</button>'+
+    '<div class="jugador-campos">'+
+      '<div><div class="campo-label">Nombre completo <span class="req">*</span></div>'+
+      '<input type="text" class="campo-input'+(esPend?" pendiente":"")+ '" data-campo="nombre" placeholder="Nombre y apellido" maxlength="60" onblur="onJugadorBlur(this,\''+id+'\')" oninput="onJugadorInput(this)"></div>'+
+      '<div><div class="campo-label">Género <span class="req">*</span></div>'+
+      '<select class="campo-select" data-campo="genero" onchange="actualizarContadores();onJugadorChange(this,\''+id+'\')">'+
+        '<option value="">—</option>'+
+        '<option value="Masculino">♂ Masculino</option>'+
+        '<option value="Femenino">♀ Femenino</option>'+
+      '</select></div>'+
+      '<div><div class="campo-label">Camiseta</div>'+
+      '<input type="number" class="campo-input" data-campo="camiseta" placeholder="10" min="0" max="99" onblur="onJugadorBlur(this,\''+id+'\')"></div>'+
+      '<div><div class="campo-label">Posición</div>'+
+      '<select class="campo-select" data-campo="posicion" onchange="onJugadorChange(this,\''+id+'\')">'+
+        '<option value="Jugador">Jugador/a</option>'+
+        '<option value="Portero">Portero/a</option>'+
+        '<option value="Libero">Líbero</option>'+
+        '<option value="Capitan">Capitán/a</option>'+
+      '</select></div>'+
+    '</div>';
+  document.getElementById("jugadores-lista").appendChild(div);
+  // Llenar datos si los hay — nombre siempre en MAYÚSCULAS
+  if(datos){
+    var ni=div.querySelector('[data-campo="nombre"]');
+    if(ni) ni.value=(datos.nombre_completo||"").toUpperCase();
+    var gi=div.querySelector('[data-campo="genero"]'); if(gi) gi.value=datos.genero||"";
+    var ci=div.querySelector('[data-campo="camiseta"]'); if(ci) ci.value=datos.numero_camiseta||"";
+    var pi=div.querySelector('[data-campo="posicion"]'); if(pi) pi.value=datos.posicion||"Jugador";
+  }
+  actualizarContadores();
+}
+
+// ── MAYÚSCULAS: aplica a cualquier input de texto al salir ──
+function mayusInput(input){
+  if(!input) return;
+  var pos=input.selectionStart;
+  input.value=input.value.toUpperCase();
+  try{ input.setSelectionRange(pos,pos); } catch(e){}
+}
+window.mayusInput=mayusInput;
+
+// ── Timer para guardado diferido (evita llamadas por cada tecla) ──
+var _saveTimer = null;
+var _saveInProgress = false;
+
+// Muestra badge mini en la fila del jugador
+function badgeFila(filaId, estado_badge){
+  var b = document.getElementById("badge-"+filaId);
+  if(!b) return;
+  b.textContent = estado_badge==="guardando" ? "⏳ guardando..." :
+                  estado_badge==="guardado"  ? "✓ guardado"      :
+                  estado_badge==="error"     ? "⚠ error"         : "";
+  b.className = "jug-save-badge " + (estado_badge||"");
+  if(estado_badge==="guardado"){
+    setTimeout(function(){ b.className="jug-save-badge"; b.textContent=""; }, 2000);
+  }
+}
+
+window.onJugadorInput=function(input){
+  var fila=input.closest(".jugador-fila");
+  var val=input.value.trim();
+  if(val&&val.indexOf("TODO")===-1){
+    input.classList.remove("pendiente");
+    if(fila){fila.classList.remove("tiene-pendiente");var num=fila.querySelector(".jugador-num");if(num)num.classList.remove("pendiente-num");}
+  }
+};
+
+// onblur de inputs de texto: mayúsculas + guardar
+window.onJugadorBlur=function(input, filaId){
+  mayusInput(input);
+  actualizarContadores();
+  // Solo guardar si el campo nombre tiene contenido válido
+  var fila = filaId ? document.getElementById(filaId) : input.closest(".jugador-fila");
+  if(fila){
+    var nom = fila.querySelector('[data-campo="nombre"]');
+    if(nom && nom.value.trim() && nom.value.trim().toUpperCase().indexOf("TODO")===-1){
+      programarGuardado(filaId || (fila?fila.id:""));
+    }
+  }
+  autoguardar(); // siempre actualiza sessionStorage
+};
+
+// onchange de selects: guardar inmediatamente
+window.onJugadorChange=function(select, filaId){
+  actualizarContadores();
+  autoguardar();
+  var fila = filaId ? document.getElementById(filaId) : select.closest(".jugador-fila");
+  if(fila){
+    var nom = fila.querySelector('[data-campo="nombre"]');
+    if(nom && nom.value.trim() && nom.value.trim().toUpperCase().indexOf("TODO")===-1){
+      programarGuardado(filaId || (fila?fila.id:""));
+    }
+  }
+};
+
+/**
+ * Programa un guardado completo con debounce de 800ms.
+ * Captura grupo+deporte en el momento de programar (no al ejecutar)
+ * para evitar que un cambio de grupo afecte el guardado pendiente.
+ */
+function programarGuardado(filaId){
+  if(filaId) badgeFila(filaId, "guardando");
+
+  // Capturar contexto actual AHORA — no en el callback
+  var grupoCapturado   = estado.grupo;
+  var deporteCapturado = estado.deporte;
+  var claveCapturada   = estado.claveActual;
+
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function(){
+    // Verificar que el admin sigue en el mismo grupo/deporte
+    if(estado.grupo !== grupoCapturado || estado.deporte !== deporteCapturado){
+      // Cambió de grupo mientras esperaba — cancelar silenciosamente
+      if(filaId) badgeFila(filaId,"");
+      return;
+    }
+    ejecutarGuardadoCompleto(filaId, grupoCapturado, deporteCapturado);
+  }, 800);
+}
+
+/**
+ * Guarda TODOS los jugadores del equipo en el Sheet.
+ * Recibe grupo y deporte como parámetros explícitos para evitar
+ * que el estado haya cambiado entre la programación y la ejecución.
+ */
+function ejecutarGuardadoCompleto(filaId, grupoFijo, deporteFijo){
+  if(_saveInProgress) return;
+  var grupo   = grupoFijo   || estado.grupo;
+  var deporte = deporteFijo || estado.deporte;
+  if(!grupo || !deporte) return;
+
+  if(typeof google==="undefined"||!google.script){
+    autoguardar();
+    if(filaId) badgeFila(filaId,"guardado");
+    return;
+  }
+
+  var pin = window.getAdminPIN ? window.getAdminPIN() : "";
+  var jugadoresActuales = recopilarJugadores();
+
+  if(!jugadoresActuales.length){
+    if(filaId) badgeFila(filaId,"");
+    return;
+  }
+
+  // Leer campos del formulario SOLO si aún estamos en el mismo grupo
+  var capVal = (document.getElementById("inp-capitan")||{value:""}).value.trim() || estado.capitan;
+  var pi     = estado.paisAsignado;
+
+  var payload = {
+    pin: pin,
+    equipo: {
+      grupo        : grupo,
+      deporte      : deporte,
+      nombre_equipo: (document.getElementById("inp-nombre")||{value:""}).value.trim() || "Delegacion "+grupo,
+      capitan      : capVal,
+      color_camiseta: (document.getElementById("inp-color")||{value:""}).value.trim(),
+      pais_asignado : pi ? pi.pais : "",
+      // ── RBAC: marcar si el cambio fue hecho por un capitán ──
+      pendiente_aprobacion : (ROL_ACTUAL === "capitan"),
+      modificado_por_rol   : ROL_ACTUAL,
+      grupo_capitan        : GRUPO_CAPITAN || ""
+    },
+    jugadores: jugadoresActuales
+  };
+
+  _saveInProgress = true;
+  badge("Guardando...","guardando");
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      _saveInProgress = false;
+      // Solo mostrar resultado si el admin sigue en el mismo contexto
+      if(estado.grupo !== grupo || estado.deporte !== deporte) return;
+      if(res && res.ok){
+        badge("✓ Guardado","guardado");
+        if(filaId) badgeFila(filaId,"guardado");
+        autoguardar();
+        var d = res.datos || {};
+        if(d.jugadores_error > 0){
+          mostrarToast("toast-paso3",
+            "⚠️ "+d.jugadores_ok+" jugadores guardados. "+d.jugadores_error+" omitidos.",
+            "toast-warn");
+        }
+      } else {
+        badge("","");
+        if(filaId) badgeFila(filaId,"error");
+        mostrarToast("toast-paso3",
+          "⚠️ No se pudo guardar: "+(res?res.mensaje:"Error"),
+          "toast-error");
+      }
+    })
+    .withFailureHandler(function(err){
+      _saveInProgress = false;
+      if(estado.grupo !== grupo || estado.deporte !== deporte) return;
+      badge("","");
+      if(filaId) badgeFila(filaId,"error");
+      mostrarToast("toast-paso3",
+        "⚠️ Error de conexión. Datos en borrador local.",
+        "toast-warn");
+      console.error("guardarInscripcionAdmin error:",err);
+    })
+    .guardarInscripcionAdmin(payload);
+}
+
+window.eliminarJugadorUI=function(id){
+  var el=document.getElementById(id); if(el) el.remove();
+  actualizarContadores();
+  document.querySelectorAll(".jugador-num").forEach(function(n,i){n.textContent=i+1;});
+  autoguardar();
+  // Guardar en Sheet después de eliminar
+  programarGuardado(null);
+};
+
+function recopilarJugadores(){
+  var lista=[];
+  document.querySelectorAll(".jugador-fila").forEach(function(f){
+    var n=f.querySelector('[data-campo="nombre"]').value.trim();
+    if(!n) return;
+    lista.push({
+      id_jugador      : f.getAttribute("data-jug-id") || "", // preservar ID existente
+      nombre_completo : n,
+      genero          : f.querySelector('[data-campo="genero"]').value||"Masculino",
+      numero_camiseta : f.querySelector('[data-campo="camiseta"]').value.trim()||"",
+      posicion        : f.querySelector('[data-campo="posicion"]').value||"Jugador",
+      autoriza_imagen : true
+    });
+  });
+  return lista;
+}
+
+function actualizarContadores(){
+  var jugs=recopilarJugadores();
+  var mujeres=jugs.filter(function(j){return j.genero==="Femenino";});
+  var esFutsal=(estado.deporte||"").indexOf("Futsal")!==-1;
+  var minMuj=esFutsal?2:1;
+  var pendientes=document.querySelectorAll(".jugador-fila.tiene-pendiente").length;
+  // Actualizar también las que tienen "TODO" en nombre
+  var pendCount=0;
+  document.querySelectorAll(".jugador-fila").forEach(function(f){
+    var n=f.querySelector('[data-campo="nombre"]');
+    if(n&&esPendiente(n.value)){ pendCount++; f.classList.add("tiene-pendiente"); }
+  });
+  var el;
+  el=document.getElementById("contador-jugadores"); if(el) el.textContent=jugs.length;
+  el=document.getElementById("contador-mujeres");   if(el) el.textContent=mujeres.length;
+  el=document.getElementById("contador-pendientes"); if(el) el.textContent=pendCount;
+  var sT=document.getElementById("stat-total");
+  var sM=document.getElementById("stat-mujeres");
+  var sP=document.getElementById("stat-pendientes");
+  if(sT) sT.className="jug-stat"+(jugs.length>=5?" ok":" warn");
+  if(sM) sM.className="jug-stat"+(mujeres.length>=minMuj?" ok":mujeres.length>0?" warn":" err");
+  if(sP) sP.className="jug-stat"+(pendCount===0?" ok":" warn");
+  el=document.getElementById("alerta-mujer"); if(el) el.style.display=(jugs.length>0&&mujeres.length<minMuj&&esFutsal)?"flex":"none";
+  el=document.getElementById("count-pendientes-jug"); if(el) el.textContent=pendCount;
+  el=document.getElementById("alerta-pendientes-jugadores"); if(el) el.style.display=pendCount>0?"flex":"none";
+  // Colorear filas femeninas
+  document.querySelectorAll(".jugador-fila").forEach(function(f){
+    var sel=f.querySelector('[data-campo="genero"]');
+    var num=f.querySelector(".jugador-num");
+    var esMujer=sel&&sel.value==="Femenino";
+    var esPend=f.querySelector('[data-campo="nombre"]')&&esPendiente(f.querySelector('[data-campo="nombre"]').value);
+    if(esPend){ f.className="jugador-fila tiene-pendiente"; if(num){num.classList.remove("es-mujer-num");num.classList.add("pendiente-num");} }
+    else if(esMujer){ f.className="jugador-fila es-mujer"; if(num){num.classList.add("es-mujer-num");num.classList.remove("pendiente-num");} }
+    else{ f.className="jugador-fila"; if(num){num.classList.remove("es-mujer-num","pendiente-num");} }
+  });
+}
+window.actualizarContadores=actualizarContadores;
+
+// ══════════════════════════════════════════════
+// RESUMEN
+// ══════════════════════════════════════════════
+function renderResumen(){
+  // Sanity check: si no hay grupo/deporte activo, no renderizar
+  if(!estado.grupo || !estado.deporte){
+    document.getElementById("resumen-equipo").innerHTML=
+      '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px">⚠️ Sin equipo seleccionado. Vuelve al Paso 1.</div>';
+    return;
+  }
+  estado.jugadores=recopilarJugadores();
+  var mujeres=estado.jugadores.filter(function(j){return j.genero==="Femenino";});
+  var esFutsal=(estado.deporte||"").indexOf("Futsal")!==-1;
+  var minMuj=esFutsal?2:0;
+  function fila(l,v){return'<div class="resumen-row"><span class="resumen-label">'+l+'</span><span class="resumen-valor">'+v+'</span></div>';}
+  var capVal=(document.getElementById("inp-capitan")||{value:""}).value.trim()||estado.capitan;
+  var nomVal=(document.getElementById("inp-nombre")||{value:""}).value.trim()||estado.nombre;
+  var colVal=(document.getElementById("inp-color")||{value:""}).value.trim()||estado.color;
+  var pi=estado.paisAsignado;
+  document.getElementById("resumen-equipo").innerHTML=
+    fila("Grupo",estado.grupo+" — "+estado.nivel)+
+    fila("Deporte","<strong style='color:#0047AB'>"+estado.deporte+"</strong>")+
+    fila("ID",estado.grupo+"_"+(CODIGOS_DEPORTE[estado.deporte]||"?"))+
+    fila("Delegación",nomVal||"Delegación "+estado.grupo)+
+    fila("Capitán/a",capVal)+
+    fila("Camiseta",colVal||"No indicado")+
+    (pi?fila("País",flagImg(pi.bandera)+" <strong>"+pi.pais+"</strong>"):"")+
+    fila("Jugadores",'<span class="'+(estado.jugadores.length>=5?"resumen-ok":"resumen-warn")+'">'+estado.jugadores.length+"</span>")+
+    fila("Jugadoras",'<span class="'+(mujeres.length>=minMuj?"resumen-ok":"resumen-err")+'">'+mujeres.length+(mujeres.length>=minMuj?" ✓":" ⚠ requiere "+minMuj)+"</span>");
+  var htmlJ='<div style="display:flex;flex-direction:column;gap:6px">';
+  estado.jugadores.forEach(function(j,i){
+    htmlJ+='<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:#f8fafc;border-radius:9px;font-size:12px">'+
+      '<span style="width:22px;height:22px;background:'+(j.genero==="Femenino"?"#1a7a4a":"#0047AB")+';color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+(i+1)+'</span>'+
+      '<span style="flex:1;font-weight:600">'+j.nombre_completo+'</span>'+
+      '<span style="color:'+(j.genero==="Femenino"?"#1a7a4a":"#475569")+'">'+(j.genero==="Femenino"?"♀":"♂")+" "+j.genero+'</span>'+
+      '<span style="color:#64748b">N°'+(j.numero_camiseta||"—")+'</span></div>';
+  });
+  htmlJ+='</div>';
+  document.getElementById("resumen-jugadores").innerHTML=htmlJ;
+  document.getElementById("resumen-alerta-mujer").style.display=mujeres.length>=minMuj?"none":"flex";
+}
+
+// ══════════════════════════════════════════════
+// ENVÍO
+// ══════════════════════════════════════════════
+window.volverAEditar=function(){
+  document.getElementById("estado-envio").style.display="none";
+  document.getElementById("vista-previa").style.display="block";
+};
+
+window.enviarInscripcion=function(){
+  if(!document.getElementById("chk-declaracion").checked){
+    mostrarToast("toast-global","Debes confirmar la declaración antes de guardar.","toast-warn");
+    return;
+  }
+  var pin=window.getAdminPIN?window.getAdminPIN():"";
+  var capVal=(document.getElementById("inp-capitan")||{value:""}).value.trim()||estado.capitan;
+  var pi=estado.paisAsignado;
+  // Siempre recopilar del DOM (captura ediciones de última hora)
+  var jugadoresActuales=recopilarJugadores();
+  var payload={
+    pin:pin,
+    equipo:{
+      grupo:estado.grupo, deporte:estado.deporte,
+      nombre_equipo:(document.getElementById("inp-nombre")||{value:""}).value.trim()||"Delegacion "+estado.grupo,
+      capitan:capVal,
+      color_camiseta:(document.getElementById("inp-color")||{value:""}).value.trim(),
+      pais_asignado:pi?pi.pais:""
+    },
+    jugadores:jugadoresActuales
+  };
+  document.getElementById("vista-previa").style.display="none";
+  document.getElementById("estado-envio").style.display="block";
+  document.getElementById("env-spinner").style.display="block";
+  document.getElementById("env-icono").style.display="none";
+  document.getElementById("env-btn-nuevo").style.display="none";
+  document.getElementById("env-btn-editar").style.display="none";
+  document.getElementById("env-titulo").textContent="Guardando inscripción...";
+  document.getElementById("env-mensaje").textContent="Sobreescribiendo en la base de datos...";
+
+  if(typeof google==="undefined"||!google.script){
+    setTimeout(function(){
+      document.getElementById("env-spinner").style.display="none";
+      document.getElementById("env-icono").style.display="block";
+      document.getElementById("env-icono").innerHTML='<div class="check-grande">🏆</div>';
+      document.getElementById("env-titulo").textContent="¡Inscripción guardada! (Demo)";
+      document.getElementById("env-titulo").className="estado-exito";
+      document.getElementById("env-mensaje").innerHTML=
+        "Grupo <strong>"+estado.grupo+"</strong> — <strong>"+estado.deporte+"</strong><br>"+
+        jugadoresActuales.length+" jugadores.<br>"+
+        '<span style="font-size:11px;color:#94a3b8">(Modo demo sin Apps Script)</span>';
+      document.getElementById("env-btn-nuevo").style.display="inline-block";
+      try{var s=JSON.parse(sessionStorage.getItem(SAVE_KEY)||"{}");delete s[estado.claveActual];sessionStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
+    },800);
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      document.getElementById("env-spinner").style.display="none";
+      document.getElementById("env-icono").style.display="block";
+      if(res&&res.ok){
+        var d=res.datos||{};
+        document.getElementById("env-icono").innerHTML='<div class="check-grande">🏆</div>';
+        document.getElementById("env-titulo").textContent="¡Inscripción guardada!";
+        document.getElementById("env-titulo").className="estado-exito";
+        document.getElementById("env-mensaje").innerHTML=
+          "Grupo <strong>"+estado.grupo+"</strong> — <strong>"+estado.deporte+"</strong><br>"+
+          "Jugadores: <strong>"+(d.jugadores_ok||0)+"</strong>"+
+          (d.jugadores_error>0?' | <span style="color:#c9a227">'+d.jugadores_error+" pendientes omitidos</span>":"")+
+          (d.accion?' <span style="font-size:11px;color:#64748b">('+d.accion+')</span>':"")+
+          (d.alerta_mujer?'<br><div style="background:#fdf6e3;border:1px solid #fcd34d;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-top:8px">⚠️ '+d.alerta_mujer+"</div>":"")+
+          (d.errores&&d.errores.length?'<div style="margin-top:6px;font-size:11px;color:#94a3b8">Omitidos: '+d.errores.map(function(er){return er.jugador||"Fila "+(er.num||"?");}).join(", ")+"</div>":"");
+        document.getElementById("env-btn-nuevo").style.display="inline-block";
+        try{var s=JSON.parse(sessionStorage.getItem(SAVE_KEY)||"{}");delete s[estado.claveActual];sessionStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(ex){}
+      } else {
+        document.getElementById("env-icono").innerHTML='<div class="check-grande">❌</div>';
+        document.getElementById("env-titulo").textContent="Error al guardar";
+        document.getElementById("env-titulo").className="estado-error";
+        document.getElementById("env-mensaje").innerHTML=
+          '<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:14px;font-size:13px;color:#b91c1c">'+
+          (res&&res.mensaje?res.mensaje:"Error inesperado.")+
+          "<br><br>Haz clic en <strong>✏️ Editar y corregir</strong> para revisar los datos.</div>";
+        document.getElementById("env-btn-editar").style.display="inline-block";
+      }
+    })
+    .withFailureHandler(function(err){
+      document.getElementById("env-spinner").style.display="none";
+      document.getElementById("env-icono").style.display="block";
+      document.getElementById("env-icono").innerHTML='<div class="check-grande">⚠️</div>';
+      document.getElementById("env-titulo").textContent="Error de conexión";
+      document.getElementById("env-titulo").className="estado-error";
+      document.getElementById("env-mensaje").innerHTML=
+        '<div style="background:#fdf6e3;border:1px solid #fcd34d;border-radius:10px;padding:14px;font-size:13px;color:#92400e">'+
+        "No se pudo conectar con Apps Script.<br>Tus datos están guardados localmente — intenta de nuevo.<br>"+
+        '<span style="font-size:11px;color:#94a3b8">'+(err?String(err):"")+"</span></div>";
+      document.getElementById("env-btn-editar").style.display="inline-block";
+    })
+    .guardarInscripcionAdmin(payload);
+};
+
+// ══════════════════════════════════════════════
+// VER AMBOS EQUIPOS DEL GRUPO (Paso 3 - Confirmar)
+// ══════════════════════════════════════════════
+var _ambosVisible = false;
+window.toggleAmbosEquipos = function(){
+  _ambosVisible = !_ambosVisible;
+  var panel = document.getElementById("panel-ambos-equipos");
+  var btn   = document.getElementById("btn-ver-ambos");
+  if(!panel) return;
+  panel.style.display = _ambosVisible ? "block" : "none";
+  btn.textContent = _ambosVisible ? "✕ Ocultar" : "👥 Ver ambos equipos del grupo";
+  if(_ambosVisible) cargarAmbosEquipos();
+};
+
+function cargarAmbosEquipos(){
+  var lbl = document.getElementById("ambos-grupo-label");
+  var cont = document.getElementById("ambos-contenido");
+  if(lbl) lbl.textContent = estado.grupo;
+
+  var pin = window.getAdminPIN ? window.getAdminPIN() : "";
+  var grado = parseInt(estado.grupo.charAt(0));
+  var deps  = grado <= 5 ? DEPORTES_PRIMARIA : DEPORTES_BACHILLERATO;
+  var CODIGOS = {"Mini Futsal":"MF","Mini Voleibol":"MV","Futsal":"FS","Voleibol":"VB"};
+
+  var resultados = {};
+  var pendientes = deps.length;
+
+  if(typeof google === "undefined" || !google.script){
+    // Demo: usar datos de planilla
+    cont.innerHTML = "";
+    deps.forEach(function(dep){
+      var clave = estado.grupo + "_" + CODIGOS[dep];
+      var planilla = DATOS_PLANILLAS[clave];
+      cont.innerHTML += _renderMiniEquipo(dep, planilla || null);
+    });
+    return;
+  }
+
+  cont.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:16px;grid-column:1/-1">⏳ Cargando...</div>';
+
+  deps.forEach(function(dep){
+    google.script.run
+      .withSuccessHandler(function(res){
+        resultados[dep] = (res && res.ok && res.datos) ? res.datos : null;
+        pendientes--;
+        if(pendientes === 0) _renderAmbosEquipos(deps, resultados, cont);
+      })
+      .withFailureHandler(function(){
+        resultados[dep] = null;
+        pendientes--;
+        if(pendientes === 0) _renderAmbosEquipos(deps, resultados, cont);
+      })
+      .getEquipoConJugadores(estado.grupo, dep, pin);
+  });
+}
+
+function _renderAmbosEquipos(deps, resultados, cont){
+  var html = "";
+  deps.forEach(function(dep){
+    html += _renderMiniEquipo(dep, resultados[dep]);
+  });
+  cont.innerHTML = html;
+}
+
+function _renderMiniEquipo(deporte, datos){
+  var icono = deporte.indexOf("Futsal") !== -1 ? "⚽" : "🏐";
+  var jugadores = datos ? (datos.jugadores || []) : [];
+  var inscrito  = datos ? datos.inscrito : false;
+  var capitan   = datos ? (datos.capitan || "") : "";
+  var mujeres   = jugadores.filter(function(j){ return j.genero === "Femenino"; }).length;
+
+  var badgeColor = inscrito ? "#e6f4ed" : "#fdf6e3";
+  var badgeTxt   = inscrito ? "✓ Inscrito" : "Pendiente";
+  var badgeClr   = inscrito ? "#1a7a4a"  : "#92400e";
+
+  var jugHtml = "";
+  if(jugadores.length){
+    jugHtml = jugadores.map(function(j,i){
+      var esMujer = j.genero === "Femenino";
+      return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;border-bottom:1px solid #f1f5f9">'+
+        '<span style="width:20px;height:20px;border-radius:5px;background:'+(esMujer?"#1a7a4a":"#0047AB")+';color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">'+(i+1)+'</span>'+
+        '<span style="flex:1;font-weight:500">'+(j.nombre_completo||"—").toUpperCase()+'</span>'+
+        '<span style="color:'+(esMujer?"#1a7a4a":"#475569")+';font-size:10px">'+(esMujer?"♀":"♂")+'</span>'+
+        '</div>';
+    }).join("");
+  } else {
+    jugHtml = '<div style="font-size:11px;color:#94a3b8;text-align:center;padding:8px">Sin jugadores registrados</div>';
+  }
+
+  return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;overflow:hidden">'+
+    '<div style="background:#0047AB;color:#fff;padding:8px 12px;display:flex;align-items:center;justify-content:space-between">'+
+      '<span style="font-size:13px;font-weight:700">'+icono+' '+deporte+'</span>'+
+      '<span style="font-size:10px;background:'+badgeColor+';color:'+badgeClr+';padding:2px 7px;border-radius:6px;font-weight:700">'+badgeTxt+'</span>'+
+    '</div>'+
+    '<div style="padding:10px 12px">'+
+      (capitan ? '<div style="font-size:11px;color:#475569;margin-bottom:8px">👑 Capitán: <strong>'+capitan.toUpperCase()+'</strong></div>' : '')+
+      '<div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">'+
+        jugadores.length+' jugadores · '+mujeres+' jugadoras'+
+      '</div>'+
+      jugHtml+
+    '</div>'+
+  '</div>';
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+inicializarRol();   // RBAC: detectar rol y aplicar restricciones
+renderGrupos();
+
+})();
+</script>
+</div><!-- /insc-formulario -->

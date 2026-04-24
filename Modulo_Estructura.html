@@ -1,0 +1,449 @@
+<!-- ============================================================
+     Modulo_Estructura.html — Panel de estructura del torneo
+     SOLO PARA ADMINISTRADOR — verifica que todo esté listo
+     antes del día de apertura.
+     Consume: getEstadoCompletoTorneo() de Motor_Torneo.gs
+     ============================================================ -->
+<div id="modulo-estructura">
+<style>
+#modulo-estructura { font-family:'Plus Jakarta Sans',sans-serif; max-width:960px; margin:0 auto; padding:0 0 80px; }
+
+.est-header {
+  background:linear-gradient(135deg,#0a0e1a 0%,#0047AB 100%);
+  border-radius:18px; padding:24px 28px; margin-bottom:20px; color:#fff; position:relative; overflow:hidden;
+}
+.est-header::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 80% 50%,rgba(201,162,39,.15) 0%,transparent 60%); }
+.est-header h2 { font-family:'Syne',sans-serif; font-size:20px; font-weight:900; margin:0 0 4px; position:relative; }
+.est-header p  { font-size:12px; color:rgba(255,255,255,.6); margin:0; position:relative; }
+.est-header-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.est-header-info { position:relative; }
+.btn-recargar {
+  padding:8px 16px; border:1px solid rgba(255,255,255,.3); border-radius:10px;
+  background:rgba(255,255,255,.1); color:#fff; font-size:12px; font-weight:600;
+  cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:all .2s;
+  display:flex; align-items:center; gap:6px; white-space:nowrap; position:relative;
+}
+.btn-recargar:hover { background:rgba(255,255,255,.2); }
+
+/* TARJETAS RESUMEN */
+.est-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:20px; }
+.est-stat-card {
+  background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:14px 12px; text-align:center;
+}
+.est-stat-num  { font-family:'Syne',sans-serif; font-size:26px; font-weight:900; color:#0047AB; line-height:1; }
+.est-stat-num.ok     { color:#1a7a4a; }
+.est-stat-num.warn   { color:#c9a227; }
+.est-stat-num.error  { color:#c0392b; }
+.est-stat-lbl  { font-size:10px; color:#94a3b8; margin-top:4px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+
+/* SEMÁFORO DE ESTADO */
+.est-semaforo {
+  background:#fff; border:1px solid #e2e8f0; border-radius:16px;
+  padding:16px 18px; margin-bottom:16px;
+}
+.est-semaforo-titulo { font-size:14px; font-weight:700; color:#0d1117; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.semaforo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+.semaforo-item {
+  display:flex; align-items:flex-start; gap:10px; padding:10px 12px;
+  border-radius:12px; border:1px solid transparent;
+}
+.semaforo-item.ok     { background:#e6f4ed; border-color:rgba(26,122,74,.2); }
+.semaforo-item.warn   { background:#fdf6e3; border-color:rgba(201,162,39,.2); }
+.semaforo-item.error  { background:#fee2e2; border-color:rgba(192,57,43,.2); }
+.semaforo-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+.semaforo-item.ok    .semaforo-dot { background:#1a7a4a; }
+.semaforo-item.warn  .semaforo-dot { background:#c9a227; }
+.semaforo-item.error .semaforo-dot { background:#c0392b; }
+.semaforo-texto  { font-size:12px; font-weight:600; color:#0d1117; }
+.semaforo-detalle{ font-size:11px; color:#64748b; margin-top:2px; }
+
+/* TABLA DE GRADOS */
+.est-tabla-wrap {
+  background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:16px;
+}
+.est-tabla-head {
+  background:#0047AB; padding:12px 18px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.est-tabla-titulo { font-size:14px; font-weight:700; color:#fff; }
+.est-tabla { width:100%; border-collapse:collapse; font-size:13px; }
+.est-tabla th {
+  padding:9px 14px; background:#f0f4f8; font-size:10px; font-weight:700;
+  color:#475569; text-align:left; text-transform:uppercase; letter-spacing:.4px;
+}
+.est-tabla td { padding:11px 14px; border-bottom:1px solid #f8fafc; }
+.est-tabla tr:last-child td { border-bottom:none; }
+.est-tabla tr:hover td { background:#fafafa; }
+
+.fase-badge {
+  display:inline-block; padding:3px 9px; border-radius:8px;
+  font-size:10px; font-weight:700; white-space:nowrap;
+}
+.fase-sin    { background:#f1f5f9; color:#64748b; }
+.fase-gen    { background:#e8f0fb; color:#0047AB; }
+.fase-curso  { background:#fdf6e3; color:#92400e; }
+.fase-fin    { background:#e6f4ed; color:#1a7a4a; }
+
+.campeon-chip {
+  display:inline-flex; align-items:center; gap:5px;
+  background:#fdf6e3; border:1px solid rgba(201,162,39,.3);
+  border-radius:8px; padding:3px 9px; font-size:11px; font-weight:600; color:#92400e;
+}
+
+/* EQUIPO POR GRUPO */
+.est-equipos-wrap { background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:16px; }
+.est-eq-head { background:#1a7a4a; padding:12px 18px; font-size:14px; font-weight:700; color:#fff; }
+.est-eq-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:0; }
+.est-eq-item {
+  padding:12px 16px; border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9;
+  display:flex; align-items:center; gap:10px;
+}
+.est-eq-flag { font-size:22px; flex-shrink:0; }
+.est-eq-grupo { font-size:13px; font-weight:700; color:#0d1117; }
+.est-eq-pais  { font-size:11px; color:#64748b; margin-top:1px; }
+.est-eq-cap   { font-size:10px; color:#94a3b8; margin-top:2px; }
+.est-eq-no { padding:12px 16px; border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:8px; }
+.est-eq-no-num { font-size:12px; font-weight:600; color:#94a3b8; }
+.est-eq-no-lbl { font-size:11px; color:#cbd5e1; }
+
+/* GENERO */
+.genero-ok  { color:#1a7a4a; font-weight:600; font-size:11px; }
+.genero-err { color:#c0392b; font-weight:600; font-size:11px; }
+
+/* CARGANDO */
+.est-cargando { text-align:center; padding:60px 20px; color:#94a3b8; }
+.est-spinner { width:36px; height:36px; border:3px solid #e2e8f0; border-top-color:#0047AB; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 14px; }
+@keyframes spin { to{transform:rotate(360deg);} }
+
+/* Alerta top */
+.est-alerta {
+  border-radius:12px; padding:12px 16px; margin-bottom:14px;
+  font-size:13px; font-weight:600; display:flex; align-items:flex-start; gap:10px;
+}
+.est-alerta.ok    { background:#e6f4ed; color:#1a7a4a; border:1px solid rgba(26,122,74,.2); }
+.est-alerta.warn  { background:#fdf6e3; color:#92400e; border:1px solid rgba(201,162,39,.2); }
+.est-alerta.error { background:#fee2e2; color:#c0392b; border:1px solid rgba(192,57,43,.2); }
+</style>
+
+<div class="est-header">
+  <div class="est-header-row">
+    <div class="est-header-info">
+      <h2>&#x2699;&#xFE0F; Estructura del Torneo</h2>
+      <p>Panel de verificaci&#xF3;n pre-apertura &middot; Solo visible para el administrador &middot; Mundial GABO 2026</p>
+    </div>
+    <button class="btn-recargar" onclick="cargarEstructura()">&#x21BB; Actualizar</button>
+  </div>
+</div>
+
+<div id="est-contenido">
+  <div class="est-cargando">
+    <div class="est-spinner"></div>
+    <div>Analizando el torneo...</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ── flagImg(codigo) — FlagCDN v2 (reemplaza getBanderaEmoji/flag) ──
+function flagImg(cod,sz){
+  if(!cod||!String(cod).trim()) return '<span style="opacity:.3">&#x1F3F3;</span>';
+  var c=String(cod).toLowerCase().trim();
+  return '<img src="https://flagcdn.com/w40/'+c+'.png" alt="'+c.toUpperCase()+'" style="width:'+(sz?sz+'px':'1.6em')+';height:auto;vertical-align:middle;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.3);" onerror="this.style.display=\'none\'">';
+}
+// Alias de compatibilidad hacia atras
+if(typeof getBanderaEmoji==='undefined') var getBanderaEmoji=flagImg;
+
+(function(){
+
+var PAISES_OFICIALES = {
+  "301":{pais:"Francia",   b:"FR"}, "302":{pais:"Haiti",    b:"HT"}, "303":{pais:"Uruguay",   b:"UY"}, "304":{pais:"Salvador",  b:"SV"},
+  "401":{pais:"Espa\xF1a",b:"ES"}, "402":{pais:"Paraguay", b:"PY"}, "403":{pais:"Canad\xE1",  b:"CA"}, "404":{pais:"Colombia",  b:"CO"},
+  "501":{pais:"Ecuador",  b:"EC"}, "502":{pais:"Portugal", b:"PT"}, "503":{pais:"Alemania",  b:"DE"}, "504":{pais:"M\xE9xico",  b:"MX"},
+  "601":{pais:"Argentina",b:"AR"}, "602":{pais:"Brasil",   b:"BR"}, "603":{pais:"EEUU",      b:"US"},
+  "702":{pais:"Rumania",  b:"RO"}, "703":{pais:"Venezuela",b:"VE"}, "704":{pais:"Per\xFA",    b:"PE"}
+};
+
+var ESTRUCTURA = {
+  "3": { nivel:"Primaria",     deportes:["Mini Futsal","Mini Voleibol"], grupos:["301","302","303","304"], formato:"Eliminaci\xF3n directa (4 equipos \u2192 Semis \u2192 Final)" },
+  "4": { nivel:"Primaria",     deportes:["Mini Futsal","Mini Voleibol"], grupos:["401","402","403","404"], formato:"Eliminaci\xF3n directa + Final Especial vs 5\xB0" },
+  "5": { nivel:"Primaria",     deportes:["Mini Futsal","Mini Voleibol"], grupos:["501","502","503","504"], formato:"Eliminaci\xF3n directa + Final Especial vs 4\xB0" },
+  "6": { nivel:"Bachillerato", deportes:["Futsal","Voleibol"],           grupos:["601","602","603"],       formato:"Todos vs todos (3 equipos) + Super Final vs 7\xB0" },
+  "7": { nivel:"Bachillerato", deportes:["Futsal","Voleibol"],           grupos:["702","703","704"],       formato:"Todos vs todos (3 equipos) + Super Final vs 6\xB0" }
+};
+
+/* flag() removed -> use flagImg */
+
+function cargarEstructura() {
+  var cont = document.getElementById("est-contenido");
+  cont.innerHTML = '<div class="est-cargando"><div class="est-spinner"></div><div>Analizando el torneo...</div></div>';
+
+  // Llamadas paralelas al servidor
+  var estado = null, equipos = null, partidos = null;
+  var pendientes = 3;
+
+  function intentarRender(){
+    pendientes--;
+    if(pendientes > 0) return;
+    if(!estado && !equipos) { cont.innerHTML='<div style="text-align:center;padding:40px;color:#c0392b">Error cargando datos del torneo.</div>'; return; }
+    renderEstructura(estado, equipos || [], partidos || []);
+  }
+
+  google.script.run
+    .withSuccessHandler(function(r){ estado = r.ok ? r.datos : null; intentarRender(); })
+    .withFailureHandler(function(){ estado = null; intentarRender(); })
+    .getEstadoCompletoTorneo();
+
+  google.script.run
+    .withSuccessHandler(function(r){ equipos = r.ok ? r.datos : []; intentarRender(); })
+    .withFailureHandler(function(){ equipos = []; intentarRender(); })
+    .getEquipos();
+
+  google.script.run
+    .withSuccessHandler(function(r){ partidos = r.ok ? r.datos : []; intentarRender(); })
+    .withFailureHandler(function(){ partidos = []; intentarRender(); })
+    .getPartidos();
+}
+window.cargarEstructura = cargarEstructura;
+
+function renderEstructura(estado, equipos, partidos) {
+  var cont = document.getElementById("est-contenido");
+  var html = "";
+
+  // ── MAPA DE EQUIPOS POR GRUPO ──
+  var eqPorGrupo = {};
+  equipos.forEach(function(e){ if(!eqPorGrupo[e.grupo]) eqPorGrupo[e.grupo]=[]; eqPorGrupo[e.grupo].push(e); });
+
+  // ── RESUMEN GENERAL ──
+  if(estado) {
+    var r = estado.resumen;
+    var pct = r.pct_avance || 0;
+    var colorPct = pct===0?"":"ok";
+    html +=
+      '<div class="est-stats">' +
+        stat(r.total_equipos,   "Equipos inscritos", pct<100&&r.total_equipos>0?"ok":"warn") +
+        stat(r.total_jugadores, "Jugadores totales", "ok") +
+        stat(r.total_partidos,  "Partidos generados", r.total_partidos>0?"ok":"warn") +
+        stat(r.partidos_jugados,"Partidos jugados",   "ok") +
+        stat(r.partidos_pend,   "Pendientes",         r.partidos_pend>0?"warn":"ok") +
+        stat(pct+"%",           "Avance del torneo",  pct===100?"ok":(pct>0?"warn":"")) +
+      '</div>';
+
+    // ── SEMÁFORO PRE-APERTURA ──
+    var validGen = estado.validacion_genero;
+    var checks = [
+      { ok: r.total_equipos > 0,             txt:"Equipos inscritos",         det: r.total_equipos+" equipos registrados en el sistema" },
+      { ok: r.total_jugadores >= r.total_equipos*5, txt:"Jugadores registrados", det: r.total_jugadores+" jugadores (minimo 5 por equipo)" },
+      { ok: validGen.equipos_invalidos===0,  txt:"Regla de g\xE9nero OK",       det: validGen.equipos_invalidos===0?"Todos los equipos cumplen":""+validGen.equipos_invalidos+" equipo(s) sin las 2 mujeres requeridas en Futsal" },
+      { ok: r.total_partidos > 0,            txt:"Fixture generado",           det: r.total_partidos+" partidos en el calendario" },
+      { ok: r.partidos_pend > 0 || r.total_partidos===0, txt:"Partidos programados", det: r.partidos_pend+" partidos con fecha asignada" }
+    ];
+
+    var todosOk = checks.every(function(c){ return c.ok; });
+    html += '<div class="est-alerta '+(todosOk?"ok":"warn")+'">';
+    html += todosOk
+      ? "<strong>Listo para la apertura</strong> &mdash; Todos los requisitos est&aacute;n completos."
+      : "<strong>Verificaci&oacute;n pendiente</strong> &mdash; Algunos puntos requieren atenci&oacute;n antes de la apertura.";
+    html += '</div>';
+
+    html += '<div class="est-semaforo"><div class="est-semaforo-titulo">&#x26A6; Lista de verificaci&oacute;n pre-apertura</div><div class="semaforo-grid">';
+    checks.forEach(function(c){
+      html += '<div class="semaforo-item '+(c.ok?"ok":"warn")+'"><div class="semaforo-dot"></div><div><div class="semaforo-texto">'+(c.ok?"&#x2713; ":"&#x26A0; ")+c.txt+'</div><div class="semaforo-detalle">'+c.det+'</div></div></div>';
+    });
+    html += '</div></div>';
+  }
+
+  // ── TABLA DE ESTADO POR GRADO/DEPORTE ──
+  html +=
+    '<div class="est-tabla-wrap">' +
+      '<div class="est-tabla-head"><div class="est-tabla-titulo">Estado por Grado y Deporte</div></div>' +
+      '<table class="est-tabla">' +
+        '<thead><tr><th>Grado</th><th>Deporte</th><th>Nivel</th><th>Equipos</th><th>Partidos</th><th>Fase</th><th>Campe&oacute;n</th></tr></thead>' +
+        '<tbody>';
+
+  var combos = [
+    {g:"3",d:"Mini Futsal"},{g:"3",d:"Mini Voleibol"},
+    {g:"4",d:"Mini Futsal"},{g:"4",d:"Mini Voleibol"},
+    {g:"5",d:"Mini Futsal"},{g:"5",d:"Mini Voleibol"},
+    {g:"6",d:"Futsal"     },{g:"6",d:"Voleibol"     },
+    {g:"7",d:"Futsal"     },{g:"7",d:"Voleibol"     }
+  ];
+
+  combos.forEach(function(c){
+    var eqCombo = equipos.filter(function(e){ return String(e.grado)===c.g && String(e.deporte)===c.d; });
+    var ptCombo = partidos.filter(function(p){ return String(p.grado)===c.g && String(p.deporte)===c.d; });
+    var ptJug   = ptCombo.filter(function(p){ return p.estado==="Finalizado"||p.estado==="W.O."; });
+
+    var fase = "Sin fixture";
+    var faseCls = "fase-sin";
+    if(ptCombo.length>0 && ptJug.length===0)              { fase="Fixture listo"; faseCls="fase-gen"; }
+    else if(ptJug.length>0 && ptJug.length<ptCombo.length){ fase="En curso ("+ptJug.length+"/"+ptCombo.length+")"; faseCls="fase-curso"; }
+    else if(ptCombo.length>0 && ptJug.length===ptCombo.length){ fase="Finalizado"; faseCls="fase-fin"; }
+
+    // Buscar campeón en estado si existe
+    var campeonHTML = "&mdash;";
+    if(estado && estado.estado_grados) {
+      var eg = estado.estado_grados.filter(function(eg){ return String(eg.grado)===c.g && eg.deporte===c.d; })[0];
+      if(eg && eg.campeon) {
+        campeonHTML = '<span class="campeon-chip">&#x1F3C6; '+eg.campeon+'</span>';
+      }
+    }
+
+    html +=
+      '<tr>' +
+        '<td><strong>'+c.g+'&deg;</strong></td>' +
+        '<td>'+c.d+'</td>' +
+        '<td style="color:#94a3b8;font-size:11px">'+(parseInt(c.g)<=5?"Primaria":"Bachillerato")+'</td>' +
+        '<td>'+eqCombo.length+' / '+ESTRUCTURA[c.g].grupos.length+'</td>' +
+        '<td>'+ptJug.length+' / '+ptCombo.length+'</td>' +
+        '<td><span class="fase-badge '+faseCls+'">'+fase+'</span></td>' +
+        '<td>'+campeonHTML+'</td>' +
+      '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+
+  // ── EQUIPOS POR GRADO — validación de países ──
+  ["3","4","5","6","7"].forEach(function(g){
+    var est  = ESTRUCTURA[g];
+    html +=
+      '<div class="est-equipos-wrap">' +
+        '<div class="est-eq-head">Grado '+g+'&deg; &mdash; '+est.nivel+' &middot; <span style="font-size:12px;opacity:.8">'+est.formato+'</span></div>' +
+        '<div class="est-eq-grid">';
+
+    est.grupos.forEach(function(grupo){
+      var eqArr = eqPorGrupo[grupo] || [];
+      var pOf   = PAISES_OFICIALES[grupo] || {};
+
+      if(eqArr.length > 0) {
+        eqArr.forEach(function(e){
+          var jugCombo = 0; // simplificado — contar jugadores no disponible aquí
+          var fl = flagImg(e.bandera_codigo || pOf.b || "");
+          // Validar género
+          html +=
+            '<div class="est-eq-item">' +
+              '<div class="est-eq-flag">'+fl+'</div>' +
+              '<div>' +
+                '<div class="est-eq-grupo">Grupo '+grupo+'</div>' +
+                '<div class="est-eq-pais">'+(e.pais || pOf.pais || "Sin pa\xEDs")+'</div>' +
+                '<div class="est-eq-cap">'+(e.capitan?"Cap: "+e.capitan:"")+' &middot; '+e.deporte+'</div>' +
+              '</div>' +
+            '</div>';
+        });
+      } else {
+        var flOf = flagImg(pOf.b || "");
+        html +=
+          '<div class="est-eq-no">' +
+            '<div style="font-size:18px;opacity:.3">'+flOf+'</div>' +
+            '<div>' +
+              '<div class="est-eq-no-num">'+grupo+'</div>' +
+              '<div class="est-eq-no-lbl">'+( pOf.pais || "Sin inscribir")+'</div>' +
+            '</div>' +
+          '</div>';
+      }
+    });
+
+    html += '</div></div>';
+  });
+
+  // ── REGLAS DE JUEGO RESUMEN ──
+  html +=
+    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin-bottom:16px">' +
+      '<div style="font-size:14px;font-weight:700;color:#0d1117;margin-bottom:14px">&#x1F4CB; Reglas del torneo (resumen)</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+        reglaCard("Primaria (3\xB0\u20135\xB0)","Mini Futsal + Mini Voleibol","4 equipos por grado \u2192 Eliminaci\xF3n directa. Semis + 3er Puesto + Final. Final Especial: Camp. 4\xB0 vs Camp. 5\xB0 (Grado 4 refuerza con m\xE1x 2).","#e8f0fb") +
+        reglaCard("Bachillerato (6\xB0\u20137\xB0)","Futsal + Voleibol","3 equipos por grado \u2192 Todos contra todos. Final entre top 2. Super Final: Camp. 6\xB0 vs Camp. 7\xB0 (Grado 6 refuerza con 1).","#e6f4ed") +
+        reglaCard("G\xE9nero \u2014 Futsal","Obligatorio","M\xEDnimo 2 mujeres inscritas. M\xEDnimo 1 mujer en cancha durante todo el partido.","#fee2e2") +
+        reglaCard("G\xE9nero \u2014 Voleibol","Libre","Mixto sin restricci\xF3n de g\xE9nero. No se requiere m\xEDnimo de mujeres.","#fdf6e3") +
+      '</div>' +
+    '</div>';
+
+  // ── PANEL DE CONFIGURACIÓN RÁPIDA ──
+  html +=
+    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin-bottom:16px">' +
+      '<div style="font-size:14px;font-weight:700;color:#0d1117;margin-bottom:14px">&#x1F527; Configuraci&oacute;n r&aacute;pida</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+        '<div>' +
+          '<label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;display:block;margin-bottom:5px">N&uacute;mero de WhatsApp del docente</label>' +
+          '<div style="display:flex;gap:8px">' +
+            '<input type="tel" id="cfg-wa-input" placeholder="573XXXXXXXXX" style="flex:1;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:\'Plus Jakarta Sans\',sans-serif">' +
+            '<button onclick="guardarWA()" style="padding:8px 14px;border:none;border-radius:8px;background:#25D366;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif">Guardar</button>' +
+          '</div>' +
+          '<div id="cfg-wa-msg" style="font-size:11px;margin-top:5px;min-height:14px"></div>' +
+        '</div>' +
+        '<div>' +
+          '<label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;display:block;margin-bottom:5px">Fase actual del torneo</label>' +
+          '<div style="display:flex;gap:8px">' +
+            '<select id="cfg-fase-input" style="flex:1;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:\'Plus Jakarta Sans\',sans-serif">' +
+              '<option value="inscripcion">Inscripci\xF3n</option>' +
+              '<option value="fixture">Fixture generado</option>' +
+              '<option value="grupos">Fase de grupos</option>' +
+              '<option value="finales">Finales inter-grados</option>' +
+              '<option value="clausura">Clausura</option>' +
+            '</select>' +
+            '<button onclick="guardarFase()" style="padding:8px 14px;border:none;border-radius:8px;background:#0047AB;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif">Guardar</button>' +
+          '</div>' +
+          '<div id="cfg-fase-msg" style="font-size:11px;margin-top:5px;min-height:14px"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  cont.innerHTML = html;
+
+  // Cargar valores actuales en los campos de config
+  google.script.run
+    .withSuccessHandler(function(r){ if(r&&r.ok) document.getElementById("cfg-wa-input").value = r.datos||""; })
+    .withFailureHandler(function(){})
+    .getConfigPublico("wa_numero");
+  google.script.run
+    .withSuccessHandler(function(r){ if(r&&r.ok&&r.datos){ var s=document.getElementById("cfg-fase-input"); if(s) s.value=r.datos; }})
+    .withFailureHandler(function(){})
+    .getConfigPublico("fase_actual");
+}
+
+function guardarWA() {
+  var val = document.getElementById("cfg-wa-input").value.trim().replace(/\D/g,"");
+  var msg = document.getElementById("cfg-wa-msg");
+  if (val.length < 10) { msg.style.color="#c0392b"; msg.textContent="N\xFAmero inv\xE1lido (m\xEDn 10 d\xEDgitos)."; return; }
+  msg.style.color="#94a3b8"; msg.textContent="Guardando...";
+  google.script.run
+    .withSuccessHandler(function(r){
+      msg.style.color = r&&r.ok?"#1a7a4a":"#c0392b";
+      msg.textContent = r&&r.ok?"\u2713 Guardado":"Error: "+(r?r.mensaje:"");
+    })
+    .withFailureHandler(function(){ msg.style.color="#c0392b"; msg.textContent="Error de conexi\xF3n."; })
+    .setConfigAdmin(window.getAdminPIN?window.getAdminPIN():"","wa_numero",val);
+}
+window.guardarWA = guardarWA;
+
+function guardarFase() {
+  var val = document.getElementById("cfg-fase-input").value;
+  var msg = document.getElementById("cfg-fase-msg");
+  msg.style.color="#94a3b8"; msg.textContent="Guardando...";
+  google.script.run
+    .withSuccessHandler(function(r){
+      msg.style.color = r&&r.ok?"#1a7a4a":"#c0392b";
+      msg.textContent = r&&r.ok?"\u2713 Guardado":"Error: "+(r?r.mensaje:"");
+    })
+    .withFailureHandler(function(){ msg.style.color="#c0392b"; msg.textContent="Error de conexi\xF3n."; })
+    .setConfigAdmin(window.getAdminPIN?window.getAdminPIN():"","fase_actual",val);
+}
+window.guardarFase = guardarFase;
+
+function stat(num, lbl, cls) {
+  return '<div class="est-stat-card"><div class="est-stat-num '+(cls||"")+'">'+num+'</div><div class="est-stat-lbl">'+lbl+'</div></div>';
+}
+
+function reglaCard(titulo, sub, desc, bg) {
+  return '<div style="background:'+bg+';border-radius:12px;padding:14px 16px">'+
+    '<div style="font-size:13px;font-weight:700;color:#0d1117;margin-bottom:2px">'+titulo+'</div>'+
+    '<div style="font-size:11px;font-weight:600;color:#0047AB;margin-bottom:6px">'+sub+'</div>'+
+    '<div style="font-size:12px;color:#475569;line-height:1.5">'+desc+'</div>'+
+  '</div>';
+}
+
+// Iniciar carga automática
+cargarEstructura();
+
+})();
+</script>

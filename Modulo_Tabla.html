@@ -1,0 +1,1103 @@
+<!-- ============================================================
+     Modulo_Tabla.html — Tabla de Posiciones en Vivo
+     Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca
+     Consume: getTablaGrado(), getTablaGeneral(),
+              getGoleadores(), getEstadisticasTorneo()
+     ============================================================ -->
+
+<div id="modulo-tabla">
+
+<style>
+#modulo-tabla {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* ── CABECERA ── */
+.tb-header {
+  background: linear-gradient(135deg, #0047AB 0%, #003380 100%);
+  border-radius: 18px;
+  padding: 22px 24px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.tb-header-left h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 3px;
+}
+.tb-header-left p {
+  font-size: 12px;
+  color: rgba(255,255,255,.6);
+  margin: 0;
+}
+.tb-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+}
+.tb-refresh-btn:hover { background: rgba(255,255,255,.2); }
+.tb-ultima-act {
+  font-size: 11px;
+  color: rgba(255,255,255,.5);
+  text-align: right;
+}
+
+/* ── STATS RAPIDAS ── */
+.stats-rapidas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+@media (max-width: 560px) { .stats-rapidas { grid-template-columns: repeat(2,1fr); } }
+.stat-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: center;
+}
+.stat-num  { font-size: 26px; font-weight: 700; color: #0047AB; line-height: 1; }
+.stat-lbl  { font-size: 11px; color: #94a3b8; margin-top: 3px; font-weight: 500; }
+.stat-sub  { font-size: 10px; color: #cbd5e1; margin-top: 2px; }
+
+/* ── BARRA DE PROGRESO ── */
+.progreso-wrap {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.progreso-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+.progreso-bar {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progreso-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0047AB, #1a7a4a);
+  border-radius: 4px;
+  transition: width .8s ease;
+}
+
+/* ── TABS SELECTOR ── */
+.tabs-selector {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.tabs-row {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+.tab-btn {
+  padding: 12px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+.tab-btn:hover { color: #0047AB; }
+.tab-btn.activo {
+  color: #0047AB;
+  border-bottom-color: #0047AB;
+  background: #f8fbff;
+}
+.tab-btn.activo-deporte { color: #1a7a4a; border-bottom-color: #1a7a4a; }
+
+.tabs-deportes {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+}
+.dep-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dep-btn.activo {
+  background: #1a7a4a;
+  border-color: #1a7a4a;
+  color: #fff;
+}
+
+/* ── TABLA ── */
+.tabla-wrap {
+  padding: 16px;
+}
+.tabla-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0d1117;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tabla-fase-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e8f0fb;
+  color: #0047AB;
+  font-weight: 600;
+}
+
+.tb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tb-table thead th {
+  padding: 8px 10px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+.tb-table thead th:first-child { text-align: left; }
+.tb-table thead th.th-equipo   { text-align: left; min-width: 140px; }
+
+.tb-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background .15s;
+}
+.tb-table tbody tr:hover { background: #f8fbff; }
+.tb-table tbody tr:last-child { border-bottom: none; }
+
+.tb-table td {
+  padding: 11px 10px;
+  text-align: center;
+  color: #0d1117;
+}
+.tb-table td.td-equipo {
+  text-align: left;
+  padding-left: 6px;
+}
+
+/* COLUMNA POSICION */
+.pos-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pos-indicador {
+  width: 4px;
+  min-height: 36px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.pos-clasifica  { background: #1a7a4a; }
+.pos-repechaje  { background: #c9a227; }
+.pos-eliminado  { background: #c0392b; }
+.pos-neutro     { background: #e2e8f0; }
+.pos-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  width: 18px;
+  text-align: center;
+}
+
+/* EQUIPO CELDA */
+.eq-celda {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eq-flag    { font-size: 22px; line-height: 1; flex-shrink: 0; }
+.eq-info    { min-width: 0; }
+.eq-pais    { font-weight: 600; color: #0d1117; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eq-grupo   { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+
+/* PUNTOS */
+.td-pts {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0047AB;
+}
+.td-dg-pos { color: #1a7a4a; font-weight: 600; }
+.td-dg-neg { color: #c0392b; font-weight: 600; }
+.td-dg-neu { color: #94a3b8; }
+
+/* LEYENDA */
+.leyenda {
+  display: flex;
+  gap: 14px;
+  padding: 10px 16px;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+.ley-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #64748b;
+}
+.ley-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* CAMPEON BADGE */
+.campeon-row td { background: #fdf6e3 !important; }
+.campeon-crown {
+  font-size: 14px;
+  margin-right: 2px;
+}
+
+/* ── TABLA GENERAL ── */
+.general-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.general-header {
+  background: linear-gradient(135deg, #c9a227 0%, #b8911f 100%);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.general-header-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0a0e1a;
+}
+.general-header-sub {
+  font-size: 11px;
+  color: rgba(10,14,26,.6);
+  margin-top: 1px;
+}
+
+/* ── GOLEADORES ── */
+.goleadores-section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.gol-header {
+  background: #0047AB;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.gol-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.gol-dep-filtro {
+  display: flex;
+  gap: 6px;
+}
+.gol-dep-btn {
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.3);
+  background: transparent;
+  color: rgba(255,255,255,.7);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.gol-dep-btn.activo { background: rgba(255,255,255,.2); color: #fff; }
+
+.gol-lista { padding: 8px 0; }
+.gol-fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background .15s;
+}
+.gol-fila:last-child { border-bottom: none; }
+.gol-fila:hover      { background: #f8fbff; }
+.gol-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.gol-rank-1 { background: #c9a227; color: #fff; }
+.gol-rank-2 { background: #94a3b8; color: #fff; }
+.gol-rank-3 { background: #cd7f32; color: #fff; }
+.gol-rank-n { background: #f1f5f9; color: #64748b; }
+.gol-flag   { font-size: 20px; flex-shrink: 0; }
+.gol-nombre { flex: 1; font-size: 13px; font-weight: 600; color: #0d1117; }
+.gol-grupo  { font-size: 11px; color: #94a3b8; }
+.gol-goles  {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0047AB;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gol-pelota { font-size: 14px; }
+
+/* ── ESTADO CARGA ── */
+.cargando {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+.cargando-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0047AB;
+  border-radius: 50%;
+  animation: girar 1s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.sin-datos {
+  text-align: center;
+  padding: 32px 20px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ── BOTÓN RECALCULAR (ADMIN) ── */
+.admin-actions {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.admin-actions p { font-size: 12px; color: #64748b; margin: 0; }
+.btn-recalcular {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid #0047AB;
+  background: #fff;
+  color: #0047AB;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+}
+.btn-recalcular:hover { background: #0047AB; color: #fff; }
+</style>
+
+<!-- ── CABECERA ── -->
+<div class="tb-header">
+  <div class="tb-header-left">
+    <h2>📊 Tabla de Posiciones</h2>
+    <p>Mundial GABO 2026 · Actualización en tiempo real</p>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+    <button class="tb-refresh-btn" onclick="cargarTodo()">
+      ↺ Actualizar
+    </button>
+    <div class="tb-ultima-act" id="ultima-actualizacion">—</div>
+  </div>
+</div>
+
+<!-- ── STATS RAPIDAS ── -->
+<div class="stats-rapidas" id="stats-rapidas">
+  <div class="stat-card">
+    <div class="stat-num" id="s-jugados">—</div>
+    <div class="stat-lbl">Partidos jugados</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" id="s-pendientes">—</div>
+    <div class="stat-lbl">Por jugar</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" id="s-goles">—</div>
+    <div class="stat-lbl">Goles totales</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" id="s-promedio">—</div>
+    <div class="stat-lbl">Goles por partido</div>
+    <div class="stat-sub">promedio</div>
+  </div>
+</div>
+
+<!-- ── BARRA DE PROGRESO ── -->
+<div class="progreso-wrap">
+  <div class="progreso-label">
+    <span>Avance del torneo</span>
+    <span id="progreso-pct">0%</span>
+  </div>
+  <div class="progreso-bar">
+    <div class="progreso-fill" id="progreso-fill" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- ── ACCIONES ADMIN ── -->
+<div class="admin-actions" id="admin-actions" style="display:none">
+  <p>⚙️ Panel administrativo — recalcula las posiciones desde los resultados registrados.</p>
+  <button class="btn-recalcular" onclick="recalcularTablas()">🔄 Recalcular todas las tablas</button>
+</div>
+
+<!-- ── TABLA GENERAL ACUMULADA ── -->
+<div class="general-section" style="margin-bottom:20px">
+  <div class="general-header">
+    <div>
+      <div class="general-header-title">🏆 Tabla General — Campeón Mundial GABO 2026</div>
+      <div class="general-header-sub">Suma de puntos de todos los deportes y grados</div>
+    </div>
+  </div>
+  <div id="tabla-general-body">
+    <div class="cargando">
+      <div class="cargando-spinner"></div>
+      Cargando clasificación general...
+    </div>
+  </div>
+</div>
+
+<!-- ── TABLAS POR GRADO ── -->
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-bottom:20px">
+
+  <!-- Tabs de grado -->
+  <div class="tabs-selector">
+    <div class="tabs-row" id="tabs-grado">
+      <button class="tab-btn activo" onclick="cambiarGrado('3')" id="tab-3">Grado 3°</button>
+      <button class="tab-btn" onclick="cambiarGrado('4')" id="tab-4">Grado 4°</button>
+      <button class="tab-btn" onclick="cambiarGrado('5')" id="tab-5">Grado 5°</button>
+      <button class="tab-btn" onclick="cambiarGrado('6')" id="tab-6">Grado 6°</button>
+      <button class="tab-btn" onclick="cambiarGrado('7')" id="tab-7">Grado 7°</button>
+    </div>
+
+    <!-- Tabs de deporte -->
+    <div class="tabs-deportes" id="tabs-deporte"></div>
+
+    <!-- Contenido tabla -->
+    <div class="tabla-wrap" id="tabla-grado-body">
+      <div class="cargando">
+        <div class="cargando-spinner"></div>
+        Cargando tabla...
+      </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="leyenda">
+      <div class="ley-item">
+        <div class="ley-dot" style="background:#1a7a4a"></div>
+        Clasifica a siguiente fase
+      </div>
+      <div class="ley-item">
+        <div class="ley-dot" style="background:#c9a227"></div>
+        Zona de repechaje
+      </div>
+      <div class="ley-item">
+        <div class="ley-dot" style="background:#c0392b"></div>
+        Eliminado
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GOLEADORES ── -->
+<div class="goleadores-section">
+  <div class="gol-header">
+    <div class="gol-header-title">⚽ Tabla de Goleadores</div>
+    <div class="gol-dep-filtro">
+      <button class="gol-dep-btn activo" onclick="cambiarDepGol('')"    id="gdep-todos">Todos</button>
+      <button class="gol-dep-btn"        onclick="cambiarDepGol('Mini Futsal')"   id="gdep-mf">Mini Fútsal</button>
+      <button class="gol-dep-btn"        onclick="cambiarDepGol('Futsal')"         id="gdep-f">Fútsal</button>
+    </div>
+  </div>
+  <div class="gol-lista" id="gol-lista">
+    <div class="cargando">
+      <div class="cargando-spinner"></div>
+      Cargando goleadores...
+    </div>
+  </div>
+</div>
+
+<!-- ── SCRIPTS ── -->
+<script>
+// flagImg global de Shell.html
+
+(function() {
+
+// ── ESTADO ──
+var gradoActivo   = "3";
+var deporteActivo = "";
+var depGolActivo  = "";
+var esAdmin       = false;
+
+var DEPORTES_POR_GRADO = {
+  "3": ["Mini Futsal","Mini Voleibol"],
+  "4": ["Mini Futsal","Mini Voleibol"],
+  "5": ["Mini Futsal","Mini Voleibol"],
+  "6": ["Futsal","Voleibol"],
+  "7": ["Futsal","Voleibol"]
+};
+
+// ── INICIAR ──
+function cargarTodo() {
+  actualizarHora();
+  cargarEstadisticas();
+  cargarTablaGeneral();
+  cargarTablaGrado(gradoActivo, deporteActivo);
+  cargarGoleadores(depGolActivo);
+  verificarAdmin();
+}
+
+function actualizarHora() {
+  var ahora  = new Date();
+  var h      = pad2(ahora.getHours());
+  var m      = pad2(ahora.getMinutes());
+  document.getElementById("ultima-actualizacion").textContent =
+    "Actualizado: " + h + ":" + m;
+}
+
+function pad2(n) { return n < 10 ? "0" + n : String(n); }
+
+// ── ESTADISTICAS RAPIDAS ──
+function cargarEstadisticas() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) return;
+      var s = res.datos;
+      document.getElementById("s-jugados").textContent    = s.partidos_jugados    || "0";
+      document.getElementById("s-pendientes").textContent = s.partidos_pendientes  || "0";
+      document.getElementById("s-goles").textContent      = s.total_goles          || "0";
+      document.getElementById("s-promedio").textContent   = s.promedio_goles       || "0";
+
+      var pct = s.porcentaje_avance || 0;
+      document.getElementById("progreso-pct").textContent  = pct + "%";
+      document.getElementById("progreso-fill").style.width = pct + "%";
+    })
+    .withFailureHandler(function() {})
+    .getEstadisticasTorneo();
+}
+
+// ── TABLA GENERAL ──
+function cargarTablaGeneral() {
+  var body = document.getElementById("tabla-general-body");
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        body.innerHTML = '<div class="sin-datos">Sin datos de clasificación general aún.</div>';
+        return;
+      }
+      renderTablaGeneral(res.datos);
+    })
+    .withFailureHandler(function() {
+      body.innerHTML = '<div class="sin-datos">Error cargando clasificación general.</div>';
+    })
+    .getTablaGeneral();
+}
+
+function renderTablaGeneral(lista) {
+  var body = document.getElementById("tabla-general-body");
+  var html =
+    '<table class="tb-table" style="width:100%">' +
+      '<thead><tr>' +
+        '<th style="width:40px;padding-left:16px">#</th>' +
+        '<th class="th-equipo">Equipo</th>' +
+        '<th title="Partidos Jugados">PJ</th>' +
+        '<th title="Goles a Favor">GF</th>' +
+        '<th title="Goles en Contra">GC</th>' +
+        '<th title="Diferencia de Goles">DG</th>' +
+        '<th>Pts</th>' +
+      '</tr></thead>' +
+      '<tbody>';
+
+  for (var i = 0; i < lista.length; i++) {
+    var eq      = lista[i];
+    var esCamp  = (i === 0);
+    var dgClass = eq.dg > 0 ? "td-dg-pos" : eq.dg < 0 ? "td-dg-neg" : "td-dg-neu";
+    var dgStr   = eq.dg > 0 ? "+" + eq.dg : String(eq.dg || 0);
+    var flag    = flagImg(eq.bandera);
+
+    html = html +
+      '<tr class="' + (esCamp ? "campeon-row" : "") + '">' +
+        '<td style="padding-left:16px">' +
+          '<div class="pos-col">' +
+            '<div class="pos-indicador ' + (esCamp ? "pos-clasifica" : "pos-neutro") + '"></div>' +
+            '<span class="pos-num">' + (i + 1) + '</span>' +
+          '</div>' +
+        '</td>' +
+        '<td class="td-equipo">' +
+          '<div class="eq-celda">' +
+            '<span class="eq-flag">' + flag + '</span>' +
+            '<div class="eq-info">' +
+              '<div class="eq-pais">' +
+                (esCamp ? '<span class="campeon-crown">👑</span>' : '') +
+                (eq.pais || eq.grupo) +
+              '</div>' +
+              '<div class="eq-grupo">Grupo ' + eq.grupo + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</td>' +
+        '<td>' + (eq.pj || 0) + '</td>' +
+        '<td>' + (eq.gf || 0) + '</td>' +
+        '<td>' + (eq.gc || 0) + '</td>' +
+        '<td class="' + dgClass + '">' + dgStr + '</td>' +
+        '<td class="td-pts">' + (eq.puntos || 0) + '</td>' +
+      '</tr>';
+  }
+
+  html = html + '</tbody></table>';
+  body.innerHTML = html;
+}
+
+// ── CAMBIO DE GRADO ──
+function cambiarGrado(grado) {
+  gradoActivo   = grado;
+  deporteActivo = DEPORTES_POR_GRADO[grado][0] || "";
+
+  // Actualizar tab activo
+  var tabs = ["3","4","5","6","7"];
+  for (var i = 0; i < tabs.length; i++) {
+    var tab = document.getElementById("tab-" + tabs[i]);
+    if (tab) tab.className = "tab-btn" + (tabs[i] === grado ? " activo" : "");
+  }
+
+  renderTabsDeporte(grado);
+  cargarTablaGrado(grado, deporteActivo);
+}
+window.cambiarGrado = cambiarGrado;
+
+function renderTabsDeporte(grado) {
+  var deportes = DEPORTES_POR_GRADO[grado] || [];
+  var html     = "";
+  for (var i = 0; i < deportes.length; i++) {
+    var dep = deportes[i];
+    html = html +
+      '<button class="dep-btn ' + (dep === deporteActivo ? "activo" : "") + '"' +
+               ' onclick="cambiarDeporte(\'' + dep.replace(/'/g,"\\'"  ) + '\')">' +
+        dep +
+      '</button>';
+  }
+  document.getElementById("tabs-deporte").innerHTML = html;
+}
+
+function cambiarDeporte(deporte) {
+  deporteActivo = deporte;
+  renderTabsDeporte(gradoActivo);
+  cargarTablaGrado(gradoActivo, deporte);
+}
+window.cambiarDeporte = cambiarDeporte;
+
+// ── TABLA POR GRADO ──
+function cargarTablaGrado(grado, deporte) {
+  var body = document.getElementById("tabla-grado-body");
+  body.innerHTML = '<div class="cargando"><div class="cargando-spinner"></div>Cargando...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        body.innerHTML = '<div class="sin-datos">Sin datos para Grado ' + grado + ' — ' + deporte + '.<br>Los resultados aparecerán aquí al registrarse los partidos.</div>';
+        return;
+      }
+      renderTablaGrado(res.datos, grado, deporte);
+    })
+    .withFailureHandler(function() {
+      body.innerHTML = '<div class="sin-datos">Error cargando tabla. Intenta de nuevo.</div>';
+    })
+    .getTablaGrado(grado, deporte);
+}
+
+function renderTablaGrado(lista, grado, deporte) {
+  var body   = document.getElementById("tabla-grado-body");
+  var esPrim = parseInt(grado) <= 5;
+
+  // ── PRIMARIA: mostrar bracket de eliminación directa ──
+  // La tabla de posiciones para primaria solo muestra semifinales,
+  // lo que confunde si se presenta como liga. Mejor mostrar árbol.
+  if (esPrim) {
+    renderBracketPrimaria(lista, grado, deporte);
+    return;
+  }
+
+  // ── BACHILLERATO: tabla de posiciones (todos vs todos) ──
+  var total        = lista.length;
+  var zonaClasifica = 2;
+
+  var html =
+    '<div class="tabla-titulo">' +
+      'Grado ' + grado + '\xB0 \u2014 Bachillerato' +
+      ' \xB7 ' + deporte +
+      ' <span class="tabla-fase-badge">Todos vs todos</span>' +
+    '</div>' +
+    '<table class="tb-table">' +
+      '<thead><tr>' +
+        '<th style="width:36px;padding-left:4px">#</th>' +
+        '<th class="th-equipo">Equipo</th>' +
+        '<th title="Partidos Jugados">PJ</th>' +
+        '<th title="Partidos Ganados">PG</th>' +
+        '<th title="Partidos Empatados">PE</th>' +
+        '<th title="Partidos Perdidos">PP</th>' +
+        '<th title="Goles a Favor">GF</th>' +
+        '<th title="Goles en Contra">GC</th>' +
+        '<th title="Diferencia de Goles">DG</th>' +
+        '<th title="Puntos">Pts</th>' +
+      '</tr></thead>' +
+      '<tbody>';
+
+  for (var i = 0; i < lista.length; i++) {
+    var eq  = lista[i];
+    var pos = Number(eq.posicion) || (i + 1);
+    var indClass = pos <= zonaClasifica ? "pos-clasifica"
+                 : pos === total       ? "pos-eliminado"
+                 : "pos-neutro";
+    var dgNum   = Number(eq.dg) || 0;
+    var dgClass = dgNum > 0 ? "td-dg-pos" : dgNum < 0 ? "td-dg-neg" : "td-dg-neu";
+    var dgStr   = dgNum > 0 ? "+" + dgNum : String(dgNum);
+    var flag    = flagImg(eq.bandera);
+    var esCamp  = (i === 0 && Number(eq.pj) > 0);
+
+    html = html +
+      '<tr class="' + (esCamp ? "campeon-row" : "") + '">' +
+        '<td style="padding-left:4px">' +
+          '<div class="pos-col">' +
+            '<div class="pos-indicador ' + indClass + '"></div>' +
+            '<span class="pos-num">' + pos + '</span>' +
+          '</div>' +
+        '</td>' +
+        '<td class="td-equipo">' +
+          '<div class="eq-celda">' +
+            '<span class="eq-flag">' + flag + '</span>' +
+            '<div class="eq-info">' +
+              '<div class="eq-pais">' + (esCamp ? '\uD83D\uDC51 ' : '') + (eq.pais || eq.grupo) + '</div>' +
+              '<div class="eq-grupo">Grupo ' + eq.grupo + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</td>' +
+        '<td>' + (eq.pj || 0) + '</td>' +
+        '<td style="color:#1a7a4a;font-weight:600">' + (eq.pg || 0) + '</td>' +
+        '<td>' + (eq.pe || 0) + '</td>' +
+        '<td style="color:#c0392b">' + (eq.pp || 0) + '</td>' +
+        '<td>' + (eq.gf || 0) + '</td>' +
+        '<td>' + (eq.gc || 0) + '</td>' +
+        '<td class="' + dgClass + '">' + dgStr + '</td>' +
+        '<td class="td-pts">' + (eq.puntos || 0) + '</td>' +
+      '</tr>';
+  }
+
+  html = html + '</tbody></table>';
+  body.innerHTML = html;
+}
+
+/**
+ * Renderiza el árbol de eliminación directa para Primaria (4 equipos).
+ * Muestra Semifinal A, Semifinal B → Final y 3er Puesto de forma visual.
+ * Consulta los partidos reales para determinar ganadores.
+ */
+function renderBracketPrimaria(listaTabla, grado, deporte) {
+  var body = document.getElementById("tabla-grado-body");
+
+  body.innerHTML =
+    '<div class="tabla-titulo">Grado ' + grado + '\xB0 \u2014 Primaria \xB7 ' + deporte +
+    ' <span class="tabla-fase-badge">Eliminaci\xF3n directa</span></div>' +
+    '<div id="bracket-loading" style="text-align:center;padding:24px;color:#94a3b8">Cargando bracket...</div>';
+
+  // Leer partidos para construir el árbol
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok || !res.datos) {
+        document.getElementById("bracket-loading").textContent = "Error cargando partidos.";
+        return;
+      }
+      var partidos = res.datos.filter(function(p) {
+        return String(p.grado) === String(grado) && String(p.deporte) === String(deporte);
+      });
+      renderBracketHTML(partidos, listaTabla, grado, deporte);
+    })
+    .withFailureHandler(function() {
+      document.getElementById("bracket-loading").textContent = "Error de conexi\xF3n.";
+    })
+    .getPartidosFiltrados(grado, deporte);
+}
+
+function renderBracketHTML(partidos, listaTabla, grado, deporte) {
+  var body = document.getElementById("tabla-grado-body");
+
+  // Encontrar partidos por fase
+  function findPartido(fase) {
+    for (var i = 0; i < partidos.length; i++) {
+      if (String(partidos[i].fase) === fase) return partidos[i];
+    }
+    return null;
+  }
+
+  var sfA   = findPartido("Fase 1 - Partido A");
+  var sfB   = findPartido("Fase 1 - Partido B");
+  var final = findPartido("Final");
+  var terc  = findPartido("Tercer Puesto");
+
+  function equipoChip(id_eq, pais, grupo, goles, esFinalizado, esGanador) {
+    var eq = null;
+    for (var i = 0; i < listaTabla.length; i++) {
+      if (String(listaTabla[i].id_equipo) === String(id_eq)) { eq = listaTabla[i]; break; }
+    }
+    var fl   = flagImg(eq ? eq.bandera : "");
+    var pais2 = pais || (eq ? (eq.pais || eq.grupo) : (grupo || "?"));
+    var grp  = grupo || (eq ? eq.grupo : "");
+    var bg   = esGanador ? "background:#e6f4ed;border-color:#1a7a4a;" : (esFinalizado && !esGanador ? "background:#f8fafc;opacity:.7;" : "");
+    var icon = esGanador ? "\uD83C\uDFC6 " : "";
+    return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;' + bg + 'flex:1">' +
+      '<span style="font-size:20px">' + fl + '</span>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:700;color:#0d1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + icon + pais2 + '</div>' +
+        '<div style="font-size:10px;color:#94a3b8">Grupo ' + grp + '</div>' +
+      '</div>' +
+      (esFinalizado ? '<div style="font-size:16px;font-weight:900;color:' + (esGanador?"#1a7a4a":"#c0392b") + ';min-width:20px;text-align:right">' + (goles !== "" ? goles : "") + '</div>' : "") +
+    '</div>';
+  }
+
+  function partidoBlock(titulo, p, icono) {
+    if (!p) return '<div style="background:#f8fafc;border:1.5px dashed #e2e8f0;border-radius:14px;padding:16px;margin-bottom:12px;text-align:center;color:#94a3b8;font-size:13px">'+titulo+' \u2014 Por definir</div>';
+    var fin = p.estado === "Finalizado" || p.estado === "W.O.";
+    var glL = fin ? Number(p.goles_local || 0) : "";
+    var glV = fin ? Number(p.goles_visitante || 0) : "";
+    var ganL = fin && glL > glV;
+    var ganV = fin && glV > glL;
+    var isPD = String(p.id_equipo_local).indexOf("POR_DEFINIR") !== -1;
+    return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:12px">' +
+      '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0047AB;margin-bottom:10px;display:flex;align-items:center;gap:6px">' +
+        icono + ' ' + titulo +
+        (fin ? '<span style="margin-left:auto;background:#e6f4ed;color:#1a7a4a;border-radius:6px;padding:2px 8px;font-size:9px">Finalizado</span>'
+              : (isPD ? '<span style="margin-left:auto;background:#f1f5f9;color:#64748b;border-radius:6px;padding:2px 8px;font-size:9px">Por definir</span>'
+                      : '<span style="margin-left:auto;background:#fdf6e3;color:#92400e;border-radius:6px;padding:2px 8px;font-size:9px">Pendiente</span>')) +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        (isPD ? '<div style="flex:1;padding:9px 12px;border:1.5px dashed #e2e8f0;border-radius:10px;font-size:12px;color:#94a3b8;text-align:center">Por definir</div>'
+              : equipoChip(p.id_equipo_local, p.pais_local, p.grupo_local, glL, fin, ganL)) +
+        '<div style="font-size:14px;font-weight:900;color:rgba(0,0,0,.2);padding:0 4px">vs</div>' +
+        (isPD ? '<div style="flex:1;padding:9px 12px;border:1.5px dashed #e2e8f0;border-radius:10px;font-size:12px;color:#94a3b8;text-align:center">Por definir</div>'
+              : equipoChip(p.id_equipo_visitante, p.pais_visitante, p.grupo_visitante, glV, fin, ganV)) +
+      '</div>' +
+      (p.fecha ? '<div style="font-size:11px;color:#94a3b8;margin-top:8px;text-align:center">' + p.fecha + (p.hora ? ' \xB7 ' + p.hora : '') + '</div>' : '') +
+    '</div>';
+  }
+
+  var esFutsal = deporte.indexOf("Futsal") !== -1;
+  var g        = String(grado);
+
+  // Para Futsal grado 3: el tercer puesto es partido (se muestra en el bracket)
+  // Para Futsal grados 4-5: tercer puesto es Juego Limpio (sin partido — se muestra aviso)
+  // Para Voleibol todos: tercer puesto es puntos realizados (sin partido)
+  var mostrarPartido3er = (esFutsal && g === "3");
+  var aviso3er = "";
+  if (esFutsal && g !== "3") {
+    aviso3er = '<div style="background:#e6f4ed;border:1px solid rgba(26,122,74,.25);border-radius:14px;padding:12px 16px;font-size:12px;color:#0f6e56;margin-bottom:12px">'+
+      '\uD83E\uDD1D <strong>3er Puesto — Juego Limpio:</strong> Se determina automáticamente. '+
+      'El equipo con menor cantidad de tarjetas (excl. finalistas) obtiene el 3er lugar. Sin partido.</div>';
+  } else if (!esFutsal) {
+    aviso3er = '<div style="background:#e6f4ed;border:1px solid rgba(26,122,74,.25);border-radius:14px;padding:12px 16px;font-size:12px;color:#0f6e56;margin-bottom:12px">'+
+      '\uD83C\uDFC5 <strong>3er Puesto — Puntos realizados:</strong> El equipo con mayor puntaje en el torneo '+
+      '(excl. finalistas) obtiene el 3er lugar. Sin partido.</div>';
+  }
+
+  var html =
+    '<div class="tabla-titulo">Grado ' + grado + '\xB0 \u2014 Primaria \xB7 ' + deporte +
+    ' <span class="tabla-fase-badge">Eliminaci\xF3n directa</span></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">' +
+      partidoBlock("Semifinal A", sfA, "\uD83C\uDFAF") +
+      partidoBlock("Semifinal B", sfB, "\uD83C\uDFAF") +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr ' + (mostrarPartido3er ? "1fr" : "1fr") + ';gap:16px">' +
+      partidoBlock("Final \u2014 1\xB0 y 2\xB0 Puesto", final, "\uD83C\uDFC6") +
+      (mostrarPartido3er
+        ? partidoBlock("Tercer Puesto", terc, "\uD83E\uDD49")
+        : '<div>' + aviso3er + '</div>') +
+    '</div>' +
+    (!mostrarPartido3er ? '' : '');
+
+  body.innerHTML = html;
+}
+
+// ── GOLEADORES ──
+function cargarGoleadores(deporte) {
+  var lista = document.getElementById("gol-lista");
+  lista.innerHTML = '<div class="cargando"><div class="cargando-spinner"></div>Cargando...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        lista.innerHTML = '<div class="sin-datos">Sin goles registrados aún.</div>';
+        return;
+      }
+      renderGoleadores(res.datos);
+    })
+    .withFailureHandler(function() {
+      lista.innerHTML = '<div class="sin-datos">Error cargando goleadores.</div>';
+    })
+    .getGoleadores(deporte, 10);
+}
+
+function renderGoleadores(goleadores) {
+  var lista = document.getElementById("gol-lista");
+  var html  = "";
+
+  for (var i = 0; i < goleadores.length; i++) {
+    var g       = goleadores[i];
+    var rankCls = i === 0 ? "gol-rank-1" : i === 1 ? "gol-rank-2" : i === 2 ? "gol-rank-3" : "gol-rank-n";
+    var flag    = flagImg(g.bandera);
+
+    html = html +
+      '<div class="gol-fila">' +
+        '<div class="gol-rank ' + rankCls + '">' + (i + 1) + '</div>' +
+        '<div class="gol-flag">' + flag + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="gol-nombre">' + (g.nombre_jugador || "Jugador") + '</div>' +
+          '<div class="gol-grupo">Grupo ' + (g.grupo || "—") + ' · ' + (g.pais || "") + '</div>' +
+        '</div>' +
+        '<div class="gol-goles">' +
+          (g.goles || 0) + ' <span class="gol-pelota">⚽</span>' +
+        '</div>' +
+      '</div>';
+  }
+
+  lista.innerHTML = html;
+}
+
+function cambiarDepGol(deporte) {
+  depGolActivo = deporte;
+  var btns = ["todos","mf","f"];
+  var vals  = ["","Mini Futsal","Futsal"];
+  for (var i = 0; i < btns.length; i++) {
+    var btn = document.getElementById("gdep-" + btns[i]);
+    if (btn) btn.className = "gol-dep-btn" + (vals[i] === deporte ? " activo" : "");
+  }
+  cargarGoleadores(deporte);
+}
+window.cambiarDepGol = cambiarDepGol;
+
+// ── VERIFICAR ADMIN ──
+function verificarAdmin() {
+  // Mostrar panel admin si el usuario es el docente
+  // En GAS se puede verificar con Session.getActiveUser()
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.esAdmin) {
+        document.getElementById("admin-actions").style.display = "flex";
+        esAdmin = true;
+      }
+    })
+    .withFailureHandler(function() {})
+    .verificarRolDocente();
+}
+
+// ── RECALCULAR TABLAS (ADMIN) ──
+function recalcularTablas() {
+  var btn = document.querySelector(".btn-recalcular");
+  btn.textContent = "Recalculando...";
+  btn.disabled    = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.textContent = "🔄 Recalcular todas las tablas";
+      btn.disabled    = false;
+      if (res.ok) {
+        alert("✓ Tablas recalculadas correctamente.");
+        cargarTodo();
+      } else {
+        alert("Error: " + res.mensaje);
+      }
+    })
+    .withFailureHandler(function() {
+      btn.textContent = "🔄 Recalcular todas las tablas";
+      btn.disabled    = false;
+      alert("Error de conexión al recalcular.");
+    })
+    .recalcularTodasLasTablas();
+}
+window.recalcularTablas = recalcularTablas;
+
+// ── BANDERA EMOJI ──
+/* old flagImg emoji removed */
+
+// ── AUTO-REFRESH cada 2 minutos ──
+setInterval(function() {
+  cargarEstadisticas();
+  cargarTablaGeneral();
+  cargarTablaGrado(gradoActivo, deporteActivo);
+  actualizarHora();
+}, 120000);
+
+// ── INICIALIZAR ──
+renderTabsDeporte(gradoActivo);
+cargarTodo();
+
+})();
+</script>
+</div>

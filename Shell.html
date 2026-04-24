@@ -1,0 +1,642 @@
+<!-- Shell.html v2 — con autenticacion por PIN -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mundial GABO 2026 · I.E. GABO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f4f8; color: #0d1117; }
+
+    #nav-principal {
+      background: #0047AB; position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 2px 8px rgba(0,71,171,.2);
+    }
+    .nav-inner {
+      width: 95%; max-width: 1280px; margin: 0 auto; padding: 0 16px;
+      display: flex; align-items: center; height: 52px; gap: 4px;
+    }
+    .nav-brand {
+      font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+      color: #fff; margin-right: 12px; white-space: nowrap;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-links { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+    .nav-link {
+      padding: 6px 12px; border-radius: 8px; border: none;
+      background: transparent; color: rgba(255,255,255,.7);
+      font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+      font-family: 'Plus Jakarta Sans', sans-serif; transition: all .2s;
+    }
+    .nav-link:hover  { background: rgba(255,255,255,.12); color: #fff; }
+    .nav-link.activo { background: rgba(255,255,255,.18); color: #fff; }
+
+    /* Badge admin con indicador visual */
+    .nav-admin-badge {
+      font-size: 10px; background: #c9a227; color: #0a0e1a;
+      padding: 3px 8px; border-radius: 6px; font-weight: 700;
+      margin-left: 8px; flex-shrink: 0; display: none;
+      align-items: center; gap: 4px;
+    }
+    .nav-admin-badge.visible { display: flex; }
+    .admin-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #0a0e1a; opacity: .6;
+    }
+
+    /* Botón candado admin */
+    #btn-admin-lock {
+      margin-left: auto; flex-shrink: 0;
+      background: transparent; border: 1px solid rgba(255,255,255,.18);
+      border-radius: 8px; width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: rgba(255,255,255,.5);
+      font-size: 15px; transition: all .2s;
+    }
+    #btn-admin-lock:hover { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.35); }
+    #btn-admin-lock.admin-activo { border-color: #c9a227; color: #c9a227; background: rgba(201,162,39,.1); }
+
+    /* Botón cerrar sesión */
+    #btn-logout:hover {
+      background: rgba(220,60,60,.2) !important;
+      border-color: rgba(220,80,80,.8) !important;
+      color: #fff !important;
+    }
+
+    /* ── MODAL ADMIN ── */
+    #modal-admin-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(5,8,20,.75);
+      backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s ease;
+    }
+    #modal-admin-overlay.visible { opacity: 1; pointer-events: all; }
+
+    #modal-admin {
+      background: #0d1630;
+      border: 1px solid rgba(201,162,39,.25);
+      border-radius: 24px;
+      padding: 40px 36px 36px;
+      width: min(420px, 92vw);
+      position: relative;
+      box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
+      transform: translateY(16px) scale(.97);
+      transition: transform .3s cubic-bezier(.175,.885,.32,1.275);
+    }
+    #modal-admin-overlay.visible #modal-admin { transform: none; }
+
+    /* Fondo decorativo del modal */
+    .modal-deco {
+      position: absolute; top: -60px; right: -40px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(201,162,39,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .modal-icon-wrap {
+      width: 64px; height: 64px; border-radius: 18px;
+      background: linear-gradient(135deg, #0047AB 0%, #1a3a7a 100%);
+      border: 1px solid rgba(255,255,255,.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0,71,171,.4);
+    }
+    .modal-titulo {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px; font-weight: 900;
+      color: #fff; margin-bottom: 4px;
+    }
+    .modal-subtitulo {
+      font-size: 13px; color: rgba(255,255,255,.45);
+      margin-bottom: 28px; line-height: 1.5;
+    }
+
+    .modal-field-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: rgba(255,255,255,.4);
+      margin-bottom: 8px; display: block;
+    }
+    .modal-pin-wrap {
+      position: relative; margin-bottom: 8px;
+    }
+    #modal-pin-input {
+      width: 100%; background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px; padding: 14px 48px 14px 16px;
+      font-size: 18px; color: #fff; letter-spacing: .3em;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      outline: none; transition: border-color .2s;
+    }
+    #modal-pin-input:focus { border-color: rgba(201,162,39,.5); }
+    #modal-pin-input.error { border-color: rgba(220,53,53,.6); animation: shake .35s ease; }
+    @keyframes shake {
+      0%,100% { transform: none; }
+      20%,60%  { transform: translateX(-6px); }
+      40%,80%  { transform: translateX(6px); }
+    }
+    .modal-pin-toggle {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.3); font-size: 16px; padding: 4px;
+      transition: color .2s;
+    }
+    .modal-pin-toggle:hover { color: rgba(255,255,255,.7); }
+
+    .modal-error-msg {
+      font-size: 12px; color: #e05555; margin-bottom: 16px;
+      min-height: 16px; transition: opacity .2s;
+    }
+
+    #modal-btn-ingresar {
+      width: 100%; padding: 15px;
+      background: linear-gradient(135deg, #0047AB 0%, #0060d4 100%);
+      border: none; border-radius: 12px;
+      color: #fff; font-size: 14px; font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer; transition: all .2s;
+      box-shadow: 0 4px 16px rgba(0,71,171,.4);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    #modal-btn-ingresar:hover { background: linear-gradient(135deg, #003a8c 0%, #0052b8 100%); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,71,171,.5); }
+    #modal-btn-ingresar:active { transform: none; }
+    #modal-btn-ingresar.cargando { opacity: .7; pointer-events: none; }
+
+    .modal-divider { border: none; border-top: 1px solid rgba(255,255,255,.07); margin: 20px 0; }
+
+    .modal-cerrar {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: rgba(255,255,255,.4); font-size: 14px;
+      transition: all .2s;
+    }
+    .modal-cerrar:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+    /* Estado éxito en modal */
+    #modal-exito {
+      display: none; text-align: center; padding: 10px 0 6px;
+    }
+    #modal-exito .exito-icon {
+      font-size: 48px; margin-bottom: 12px;
+      animation: popIn .4s cubic-bezier(.175,.885,.32,1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    #modal-exito .exito-texto {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px; font-weight: 900; color: #c9a227;
+    }
+    #modal-exito .exito-sub { font-size: 13px; color: rgba(255,255,255,.5); margin-top: 4px; }
+
+    /* Banner de modo admin */
+    #banner-admin {
+      background: #c9a227; padding: 6px 16px;
+      font-size: 11px; font-weight: 600; color: #0a0e1a;
+      text-align: center; display: none;
+    }
+    #banner-admin.visible { display: block; }
+
+    #contenido-principal {
+      width: 95%; max-width: 1280px; margin: 0 auto; padding: 20px 16px;
+    }
+    #cargando-modulo {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 300px; color: #94a3b8;
+    }
+    .cl-spinner {
+      width: 36px; height: 36px; border: 3px solid #e2e8f0;
+      border-top-color: #0047AB; border-radius: 50%;
+      animation: spin 1s linear infinite; margin-bottom: 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    body.fullscreen-mode #nav-principal  { display: none; }
+    body.fullscreen-mode #banner-admin   { display: none; }
+    body.fullscreen-mode #contenido-principal { max-width: 100%; padding: 0; }
+    body.fullscreen-mode #footer         { display: none; }
+
+    @media (max-width: 768px) {
+      .nav-inner { width: 100%; padding: 0 10px; }
+      #contenido-principal { width: 100%; padding: 10px; }
+    }
+
+    #footer {
+      text-align: center; padding: 20px; font-size: 11px;
+      color: #94a3b8; border-top: 1px solid #e2e8f0; margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Banner modo admin -->
+<div id="banner-admin">
+  🔒 Modo administrador activo — Elkin Dario Florez Valderrama
+</div>
+
+<!-- NAV -->
+<nav id="nav-principal">
+  <div class="nav-inner">
+    <div class="nav-brand">🇨🇴 GABO 2026</div>
+    <div class="nav-links" id="nav-links">
+      <!-- Pestañas visibles para TODOS -->
+      <button class="nav-link activo" onclick="cargarModulo('landing')"    id="nl-landing">&#x1F3E0; Inicio</button>
+      <button class="nav-link"        onclick="cargarModulo('tabla')"      id="nl-tabla">&#x1F4CA; Tabla</button>
+      <button class="nav-link"        onclick="cargarModulo('fixture')"    id="nl-fixture">&#x1F4CB; Fixture</button>
+      <button class="nav-link"        onclick="cargarModulo('noticias')"   id="nl-noticias">&#x1F4F0; Noticias</button>
+      <button class="nav-link"        onclick="cargarModulo('inscripcion')" id="nl-inscripcion">&#x1F4DD; Inscripci&oacute;n</button>
+      <!-- Pestañas SOLO ADMIN — ocultas por defecto -->
+      <button class="nav-link" style="display:none" onclick="cargarModulo('estructura')"  id="nl-estructura">&#x1F3D7;&#xFE0F; Estructura</button>
+      <button class="nav-link" style="display:none" onclick="cargarModulo('partidos')"    id="nl-partidos">&#x2699;&#xFE0F; Partidos</button>
+      <button class="nav-link" style="display:none" onclick="cargarModulo('ficha')"       id="nl-ficha">&#x1F4CB; Ficha &Aacute;rbitro</button>
+      <button class="nav-link" style="display:none" onclick="cargarModulo('repechaje')"   id="nl-repechaje">&#x1F3C6; Repechaje</button>
+      <button class="nav-link" style="display:none" onclick="cargarModulo('premios')"     id="nl-premios">&#x1F3C5; Premios</button>
+      <!-- Eventos en pantalla grande → SOLO ADMIN -->
+      <button class="nav-link" style="display:none" onclick="cargarModulo('apertura')"    id="nl-apertura">&#x1F3AA; Apertura</button>
+      <button class="nav-link" style="display:none" onclick="cargarModulo('clausura')"    id="nl-clausura">&#x1F389; Clausura</button>
+    </div>
+    <div class="nav-admin-badge" id="admin-badge">
+      <div class="admin-dot"></div>
+      Admin
+    </div>
+    <!-- Botón de acceso / cerrar sesión -->
+    <button id="btn-admin-lock" title="Acceso administrador" onclick="abrirModalAdmin()">&#x1F510;</button>
+    <!-- Botón Cerrar Sesión (visible solo cuando hay sesión admin activa) -->
+    <button id="btn-logout" onclick="cerrarSesionAdmin()" title="Cerrar sesi&oacute;n de administrador"
+      style="display:none;margin-left:6px;padding:6px 14px;border-radius:9px;border:1.5px solid rgba(220,60,60,.5);background:rgba(220,60,60,.1);color:rgba(255,120,120,.9);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;">
+      &#x1F6AA; Salir
+    </button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     MODAL ADMIN
+     ══════════════════════════════════════════ -->
+<div id="modal-admin-overlay" onclick="cerrarModalAdminOverlay(event)">
+  <div id="modal-admin" role="dialog" aria-modal="true" aria-label="Acceso administrador">
+    <div class="modal-deco"></div>
+    <button class="modal-cerrar" onclick="cerrarModalAdmin()" title="Cerrar">&#x2715;</button>
+
+    <!-- Formulario login -->
+    <div id="modal-form-login">
+      <div class="modal-icon-wrap">&#x1F3C6;</div>
+      <div class="modal-titulo">Acceso Administrador</div>
+      <div class="modal-subtitulo">
+        Mundial GABO 2026 &middot; I.E. GABO<br>
+        Ingresa tu PIN para continuar
+      </div>
+
+      <label class="modal-field-label" for="modal-pin-input">PIN de acceso</label>
+      <div class="modal-pin-wrap">
+        <input type="password" id="modal-pin-input" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+               autocomplete="current-password"
+               onkeydown="if(event.key==='Enter') verificarModalPIN()">
+        <button class="modal-pin-toggle" id="pin-toggle-btn"
+                onclick="toggleVerPIN()" title="Ver PIN" type="button">&#x1F441;</button>
+      </div>
+      <div class="modal-error-msg" id="modal-error-msg"></div>
+
+      <button id="modal-btn-ingresar" onclick="verificarModalPIN()">
+        <span id="btn-ingresar-texto">Ingresar al panel</span>
+      </button>
+
+      <hr class="modal-divider">
+      <div style="font-size:11px;color:rgba(255,255,255,.25);text-align:center;line-height:1.6">
+        Solo el docente organizador tiene acceso.<br>
+        Elkin Dario Florez Valderrama
+      </div>
+    </div>
+
+    <!-- Estado exito -->
+    <div id="modal-exito">
+      <div class="exito-icon">&#x2705;</div>
+      <div class="exito-texto">Bienvenido, profe!</div>
+      <div class="exito-sub">Modo administrador activado</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENIDO -->
+<main id="contenido-principal">
+  <div id="cargando-modulo">
+    <div class="cl-spinner"></div>
+    <div>Cargando...</div>
+  </div>
+  <div id="modulo-activo" style="display:none"></div>
+</main>
+
+<footer id="footer">
+  <div>Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca</div>
+  <div style="margin-top:4px">Docente: Elkin Dario Florez Valderrama · Jornada Tarde</div>
+</footer>
+
+<script>
+(function() {
+
+// ── flagImg(codigo) GLOBAL — FlagCDN v2 ──
+window.flagImg = function(cod,sz){
+  if(!cod||!String(cod).trim()) return '<span style="opacity:.3">&#x1F3F3;</span>';
+  var c=String(cod).toLowerCase().trim();
+  return '<img src="https://flagcdn.com/w40/'+c+'.png" alt="'+c.toUpperCase()+'" style="width:'+(sz?sz+'px':'1.6em')+';height:auto;vertical-align:middle;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.3);" onerror="this.style.display=\'none\'">';
+};
+window.getBanderaEmoji = window.flagImg;
+
+// ── ESTADO GLOBAL ──
+var MODULO_ACTUAL = "";
+var ES_ADMIN      = false;
+var ADMIN_PIN     = "";
+
+var FULLSCREEN_MODULOS = ["apertura","clausura"];
+
+// ── MODOS ──
+function activarModoAdmin() {
+  ES_ADMIN = true;
+  document.getElementById("admin-badge").classList.add("visible");
+  document.getElementById("banner-admin").classList.add("visible");
+  document.getElementById("btn-admin-lock").classList.add("admin-activo");
+  document.getElementById("btn-admin-lock").title = "Administrador activo";
+
+  // Pestañas que se revelan al ser admin
+  var tabs = [
+    "nl-estructura","nl-partidos",
+    "nl-ficha","nl-repechaje","nl-premios",
+    "nl-apertura","nl-clausura"   // ← ahora también son solo-admin
+  ];
+  for (var i = 0; i < tabs.length; i++) {
+    document.getElementById(tabs[i]).style.display = "inline-flex";
+  }
+
+  // Mostrar botón de cerrar sesión
+  document.getElementById("btn-logout").style.display = "inline-flex";
+}
+
+function activarModoPublico() {
+  ES_ADMIN = false;
+  document.getElementById("admin-badge").classList.remove("visible");
+  document.getElementById("banner-admin").classList.remove("visible");
+  document.getElementById("btn-admin-lock").classList.remove("admin-activo");
+  document.getElementById("btn-admin-lock").title = "Acceso administrador";
+
+  // Ocultar todas las pestañas admin
+  var tabs = [
+    "nl-estructura","nl-partidos",
+    "nl-ficha","nl-repechaje","nl-premios",
+    "nl-apertura","nl-clausura"
+  ];
+  for (var i = 0; i < tabs.length; i++) {
+    document.getElementById(tabs[i]).style.display = "none";
+  }
+
+  // Ocultar botón de cerrar sesión
+  document.getElementById("btn-logout").style.display = "none";
+}
+
+// ── CERRAR SESIÓN ──
+window.cerrarSesionAdmin = function() {
+  // Confirmación visual antes de cerrar
+  var confirmar = window.confirm(
+    "\u00BFCerrar sesi\u00F3n de administrador?\n" +
+    "Las pesta\u00F1as de edici\u00F3n quedar\u00E1n ocultas para los usuarios."
+  );
+  if (!confirmar) return;
+
+  // Limpiar sesión guardada
+  try { sessionStorage.removeItem("admin_pin"); } catch(e) {}
+  try { sessionStorage.removeItem("capitan_pin"); } catch(e) {}
+  ADMIN_PIN = "";
+
+  // Desactivar modo admin en UI
+  activarModoPublico();
+
+  // Si está en un módulo solo-admin, redirigir al landing
+  var modulosAdmin = ["estructura","partidos","ficha","repechaje","premios","apertura","clausura"];
+  if (modulosAdmin.indexOf(MODULO_ACTUAL) !== -1) {
+    cargarModulo("landing");
+  }
+};
+
+// ── MODAL ADMIN ──
+window.abrirModalAdmin = function() {
+  if (ES_ADMIN) return; // Ya es admin, no abrir
+  var overlay = document.getElementById("modal-admin-overlay");
+  overlay.classList.add("visible");
+  document.getElementById("modal-form-login").style.display = "block";
+  document.getElementById("modal-exito").style.display = "none";
+  document.getElementById("modal-error-msg").textContent = "";
+  document.getElementById("modal-pin-input").value = "";
+  document.getElementById("modal-pin-input").classList.remove("error");
+  setTimeout(function() { document.getElementById("modal-pin-input").focus(); }, 300);
+};
+
+window.cerrarModalAdmin = function() {
+  document.getElementById("modal-admin-overlay").classList.remove("visible");
+};
+
+window.cerrarModalAdminOverlay = function(e) {
+  if (e.target === document.getElementById("modal-admin-overlay")) {
+    window.cerrarModalAdmin();
+  }
+};
+
+window.toggleVerPIN = function() {
+  var input = document.getElementById("modal-pin-input");
+  var btn   = document.getElementById("pin-toggle-btn");
+  if (input.type === "password") {
+    input.type = "text";
+    btn.textContent = "🙈";
+  } else {
+    input.type = "password";
+    btn.textContent = "👁";
+  }
+};
+
+window.verificarModalPIN = function() {
+  var pin = document.getElementById("modal-pin-input").value.trim();
+  if (!pin) {
+    mostrarErrorModal("Ingresa tu PIN para continuar.");
+    return;
+  }
+
+  var btn = document.getElementById("modal-btn-ingresar");
+  var txt = document.getElementById("btn-ingresar-texto");
+  btn.classList.add("cargando");
+  txt.textContent = "Verificando...";
+
+  // ── Detectar PIN de Capitán: formato CAP_<GRUPO> (ej: CAP_601) ──
+  if (pin.toUpperCase().indexOf("CAP_") === 0) {
+    var grupo = pin.toUpperCase().replace("CAP_", "").trim();
+    if (!grupo) {
+      btn.classList.remove("cargando");
+      txt.textContent = "Ingresar al panel";
+      mostrarErrorModal("PIN de capitán inválido. Formato correcto: CAP_601");
+      return;
+    }
+    try { sessionStorage.setItem("capitan_pin", "CAP_" + grupo); } catch(e) {}
+    try { sessionStorage.removeItem("admin_pin"); } catch(e) {}
+    btn.classList.remove("cargando");
+    txt.textContent = "Ingresar al panel";
+    document.getElementById("modal-form-login").style.display = "none";
+    var exitoEl = document.getElementById("modal-exito");
+    exitoEl.style.display = "block";
+    exitoEl.innerHTML =
+      '<div style="text-align:center;padding:12px">' +
+      '<div style="font-size:32px;margin-bottom:8px">🏅</div>' +
+      '<div style="font-weight:700;font-size:15px;color:#0d1117">Capitán · Grupo ' + grupo + '</div>' +
+      '<div style="font-size:12px;color:#64748b;margin-top:4px">Puedes editar tu equipo. Los cambios quedarán pendientes de aprobación del Admin.</div>' +
+      '</div>';
+    setTimeout(function() {
+      window.cerrarModalAdmin();
+      cargarModulo("inscripcion");
+    }, 1800);
+    return;
+  }
+
+  // ── Flujo Admin estándar ──
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.classList.remove("cargando");
+      txt.textContent = "Ingresar al panel";
+      if (res && res.esAdmin) {
+        try { sessionStorage.setItem("admin_pin", pin); } catch(e) {}
+        try { sessionStorage.removeItem("capitan_pin"); } catch(e) {}
+        ADMIN_PIN = pin;
+        document.getElementById("modal-form-login").style.display = "none";
+        document.getElementById("modal-exito").style.display = "block";
+        activarModoAdmin();
+        setTimeout(function() { window.cerrarModalAdmin(); }, 1400);
+      } else {
+        mostrarErrorModal("PIN incorrecto. Inténtalo de nuevo.");
+        document.getElementById("modal-pin-input").classList.add("error");
+        setTimeout(function() {
+          document.getElementById("modal-pin-input").classList.remove("error");
+        }, 500);
+      }
+    })
+    .withFailureHandler(function() {
+      btn.classList.remove("cargando");
+      txt.textContent = "Ingresar al panel";
+      mostrarErrorModal("Error de conexión. Intenta de nuevo.");
+    })
+    .verificarPIN(pin);
+};
+
+function mostrarErrorModal(msg) {
+  var el = document.getElementById("modal-error-msg");
+  el.textContent = msg;
+}
+
+// Cerrar modal con Escape
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") window.cerrarModalAdmin();
+});
+
+// ── CARGAR MODULO ──
+function cargarModulo(nombre) {
+  if (nombre === MODULO_ACTUAL) return;
+
+  var esFullscreen = FULLSCREEN_MODULOS.indexOf(nombre) !== -1;
+  document.body.classList.toggle("fullscreen-mode", esFullscreen);
+
+  MODULO_ACTUAL = nombre;
+
+  var links = document.querySelectorAll(".nav-link");
+  for (var i = 0; i < links.length; i++) links[i].classList.remove("activo");
+  var linkActivo = document.getElementById("nl-" + nombre);
+  if (linkActivo) linkActivo.classList.add("activo");
+
+  document.getElementById("cargando-modulo").style.display = "flex";
+  document.getElementById("modulo-activo").style.display   = "none";
+  document.getElementById("modulo-activo").innerHTML       = "";
+
+  var archivos = {
+    "landing"    : "Modulo_Landing",
+    "tabla"      : "Modulo_Tabla",
+    "fixture"    : "Modulo_Fixture",
+    "noticias"   : "Modulo_Noticias",
+    "inscripcion": "Modulo_Inscripcion",
+    "apertura"   : "Modulo_Apertura",
+    "estructura" : "Modulo_Estructura",
+    "partidos"   : "Modulo_Partidos",
+    "ficha"      : "Modulo_FichaArbitro",
+    "repechaje"  : "Modulo_Repechaje",
+    "premios"    : "Modulo_Premios",
+    "clausura"   : "Modulo_Clausura"
+  };
+
+  var archivo = archivos[nombre];
+  if (!archivo) {
+    document.getElementById("cargando-modulo").style.display = "none";
+    document.getElementById("modulo-activo").style.display   = "block";
+    document.getElementById("modulo-activo").innerHTML =
+      '<div style="text-align:center;padding:40px;color:#94a3b8">Modulo no encontrado.</div>';
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(html) {
+      document.getElementById("cargando-modulo").style.display = "none";
+      var activo = document.getElementById("modulo-activo");
+      activo.style.display = "block";
+      activo.innerHTML     = html;
+      var scripts = activo.querySelectorAll("script");
+      for (var s = 0; s < scripts.length; s++) {
+        try {
+          var nuevo = document.createElement("script");
+          nuevo.textContent = scripts[s].textContent;
+          document.head.appendChild(nuevo);
+        } catch(e) { console.warn("Error ejecutando script:", e); }
+      }
+    })
+    .withFailureHandler(function(err) {
+      document.getElementById("cargando-modulo").style.display = "none";
+      document.getElementById("modulo-activo").style.display   = "block";
+      document.getElementById("modulo-activo").innerHTML =
+        '<div style="text-align:center;padding:40px;color:#c0392b">Error cargando modulo.<br><small>' + (err||"") + '</small></div>';
+    })
+    .include(archivo);
+}
+window.cargarModulo = cargarModulo;
+
+function getAdminPIN() { return ADMIN_PIN; }
+function getEsAdmin()  { return ES_ADMIN; }
+window.getAdminPIN = getAdminPIN;
+window.getEsAdmin  = getEsAdmin;
+
+// ── INICIALIZAR ──
+// Verificar si ya había sesión activa (sessionStorage)
+var pinGuardado = "";
+try { pinGuardado = sessionStorage.getItem("admin_pin") || ""; } catch(e) {}
+
+if (pinGuardado) {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.esAdmin) {
+        ADMIN_PIN = pinGuardado;
+        ES_ADMIN  = true;
+        activarModoAdmin();
+      }
+      cargarModulo("landing");
+    })
+    .withFailureHandler(function() { cargarModulo("landing"); })
+    .verificarPIN(pinGuardado);
+} else {
+  cargarModulo("landing");
+}
+
+})();
+</script>
+</body>
+</html>
+
+<!-- ============================================================
+     Modulo_Inscripcion.html v2
+     CAMBIOS: campo 'deporte' obligatorio, 2 equipos por grupo
+     ============================================================ -->
+<div id="modulo-inscripcion-v2-marker" style="display:none"></div>

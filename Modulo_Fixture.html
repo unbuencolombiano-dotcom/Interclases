@@ -1,0 +1,1034 @@
+<!-- ============================================================
+     Modulo_Fixture.html — Fixture y Calendario del Torneo
+     Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca
+     Consume: getPartidos(), getPartidosFiltrados(),
+              getPartidoEnJuego(), getProximosPartidos(),
+              getPartidosFinalizados(), cambiarEstadoPartido()
+     ============================================================ -->
+
+<div id="modulo-fixture">
+
+<style>
+#modulo-fixture {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* ── CABECERA ── */
+.fx-header {
+  background: linear-gradient(135deg, #003380 0%, #0047AB 100%);
+  border-radius: 18px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.fx-header h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 3px;
+}
+.fx-header p { font-size: 12px; color: rgba(255,255,255,.6); margin: 0; }
+.fx-refresh {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 10px; padding: 8px 14px;
+  color: #fff; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+}
+.fx-refresh:hover { background: rgba(255,255,255,.2); }
+
+/* ── EN JUEGO AHORA ── */
+.en-juego-banner {
+  background: linear-gradient(135deg, #c9a227 0%, #b8911f 100%);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: none;
+  align-items: center;
+  gap: 16px;
+  animation: pulso-banner 2s ease-in-out infinite;
+}
+.en-juego-banner.visible { display: flex; }
+@keyframes pulso-banner {
+  0%,100% { box-shadow: 0 0 0 0 rgba(201,162,39,.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(201,162,39,0); }
+}
+.ej-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  animation: parpadeo 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes parpadeo { 0%,100%{opacity:1} 50%{opacity:.3} }
+.ej-info { flex: 1; }
+.ej-label { font-size: 11px; font-weight: 700; color: rgba(10,14,26,.7); text-transform: uppercase; letter-spacing: 1px; }
+.ej-partido { font-size: 15px; font-weight: 700; color: #0a0e1a; margin-top: 2px; }
+.ej-meta   { font-size: 11px; color: rgba(10,14,26,.6); margin-top: 2px; }
+.ej-marcador {
+  font-size: 28px; font-weight: 900;
+  color: #0a0e1a;
+  background: rgba(255,255,255,.3);
+  border-radius: 10px;
+  padding: 6px 14px;
+  flex-shrink: 0;
+}
+
+/* ── FILTROS ── */
+.filtros-wrap {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filtro-grupo-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  flex-basis: 100%;
+  margin-bottom: -4px;
+}
+.filtro-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.chip-filtro {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.chip-filtro:hover { border-color: #0047AB; color: #0047AB; }
+.chip-filtro.activo { background: #0047AB; border-color: #0047AB; color: #fff; }
+.chip-filtro.activo-verde { background: #1a7a4a; border-color: #1a7a4a; color: #fff; }
+.chip-filtro.activo-dorado { background: #c9a227; border-color: #c9a227; color: #fff; }
+.filtros-sep { width: 1px; background: #e2e8f0; align-self: stretch; margin: 0 2px; }
+
+/* ── VISTA RAPIDA: HOY ── */
+.hoy-section {
+  margin-bottom: 20px;
+}
+.section-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.section-titulo .s-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #0047AB;
+}
+
+/* ── TARJETA DE PARTIDO ── */
+.partido-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition: transform .15s, box-shadow .15s;
+}
+.partido-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,71,171,.08);
+}
+
+/* Borde izquierdo por estado */
+.partido-card.estado-en_juego    { border-left: 4px solid #c9a227; }
+.partido-card.estado-finalizado  { border-left: 4px solid #1a7a4a; }
+.partido-card.estado-aplazado    { border-left: 4px solid #f59e0b; }
+.partido-card.estado-suspendido  { border-left: 4px solid #c0392b; }
+.partido-card.estado-wo          { border-left: 4px solid #64748b; }
+.partido-card.estado-programado  { border-left: 4px solid #0047AB; }
+
+/* HEADER DE LA TARJETA */
+.pc-header {
+  background: #f8fafc;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+}
+.pc-meta {
+  font-size: 11px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pc-meta-item { display: flex; align-items: center; gap: 4px; }
+.estado-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.badge-programado  { background: #e8f0fb; color: #0047AB; }
+.badge-en_juego    { background: #fef9c3; color: #92400e; animation: parpadeo 1.5s infinite; }
+.badge-medio_tiempo{ background: #fef3c7; color: #78350f; }
+.badge-finalizado  { background: #e6f4ed; color: #1a7a4a; }
+.badge-aplazado    { background: #fef9c3; color: #92400e; }
+.badge-suspendido  { background: #fee2e2; color: #c0392b; }
+.badge-wo          { background: #f1f5f9; color: #475569; }
+
+/* CUERPO DE LA TARJETA */
+.pc-body {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pc-equipo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.pc-equipo.local { align-items: flex-start; }
+.pc-equipo.visit { align-items: flex-end; }
+.pc-flag  { font-size: 36px; line-height: 1; }
+.pc-pais  {
+  font-size: 14px; font-weight: 700; color: #0d1117;
+  text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 120px;
+}
+.pc-grupo { font-size: 11px; color: #94a3b8; }
+
+.pc-marcador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+.pc-score {
+  font-family: 'Syne', sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: #0d1117;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+.pc-score.pending { font-size: 20px; color: #cbd5e1; font-weight: 700; }
+.pc-fase  { font-size: 10px; color: #94a3b8; text-align: center; }
+.pc-hora  { font-size: 12px; color: #0047AB; font-weight: 600; }
+
+/* FOOTER DE LA TARJETA */
+.pc-footer {
+  padding: 8px 16px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pc-arbitro { font-size: 11px; color: #94a3b8; }
+.pc-actions { display: flex; gap: 6px; }
+.btn-accion {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+}
+.btn-accion:hover { border-color: #0047AB; color: #0047AB; }
+.btn-accion.iniciar { border-color: #c9a227; color: #92400e; background: #fef9c3; }
+.btn-accion.finalizar { border-color: #1a7a4a; color: #1a7a4a; background: #e6f4ed; }
+.aplazado-motivo {
+  font-size: 11px;
+  color: #92400e;
+  background: #fef9c3;
+  border-radius: 6px;
+  padding: 4px 8px;
+  flex-basis: 100%;
+}
+
+/* ── AGRUPACION POR GRADO ── */
+.grado-group {
+  margin-bottom: 24px;
+}
+.grado-group-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0047AB;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e8f0fb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.grado-group-title .nivel-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e8f0fb;
+  color: #0047AB;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+}
+.deporte-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 12px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── MODAL INICIO DE PARTIDO ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13,17,23,.6);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0d1117;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-campo-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 5px;
+}
+.modal-input, .modal-select, .modal-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0d1117;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+.modal-input:focus, .modal-select:focus, .modal-textarea:focus {
+  outline: none;
+  border-color: #0047AB;
+}
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.btn-modal-cancel {
+  padding: 9px 18px; border: 1.5px solid #e2e8f0;
+  border-radius: 8px; background: #fff; color: #64748b;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.btn-modal-ok {
+  padding: 9px 20px; border: none;
+  border-radius: 8px; background: #0047AB; color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background .2s;
+}
+.btn-modal-ok:hover { background: #003380; }
+.btn-modal-ok.verde { background: #1a7a4a; }
+.btn-modal-ok.verde:hover { background: #145c38; }
+.btn-modal-ok.rojo  { background: #c0392b; }
+
+/* ── CARGANDO / SIN DATOS ── */
+.cargando {
+  text-align: center; padding: 48px 20px; color: #94a3b8;
+}
+.cargando-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0047AB;
+  border-radius: 50%;
+  animation: girar 1s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+.sin-datos {
+  text-align: center; padding: 40px 20px;
+  color: #94a3b8; font-size: 13px; line-height: 1.6;
+}
+@keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+
+<!-- ── CABECERA ── -->
+<div class="fx-header">
+  <div>
+    <h2>📋 Fixture — Calendario de Partidos</h2>
+    <p>Mundial GABO 2026 · Cancha única · I.E. GABO</p>
+  </div>
+  <button class="fx-refresh" onclick="cargarTodo()">↺ Actualizar</button>
+</div>
+
+<!-- ── PARTIDO EN JUEGO AHORA ── -->
+<div class="en-juego-banner" id="en-juego-banner">
+  <div class="ej-dot"></div>
+  <div class="ej-info">
+    <div class="ej-label">🔴 En cancha ahora</div>
+    <div class="ej-partido" id="ej-partido">—</div>
+    <div class="ej-meta"   id="ej-meta">—</div>
+  </div>
+  <div class="ej-marcador" id="ej-marcador">— : —</div>
+</div>
+
+<!-- ── FILTROS ── -->
+<div class="filtros-wrap">
+  <div class="filtro-grupo-label">Filtrar por estado</div>
+  <div class="filtro-chips" id="filtros-estado">
+    <button class="chip-filtro activo" onclick="filtrarEstado('')"           id="fest-todos">Todos</button>
+    <button class="chip-filtro"        onclick="filtrarEstado('Programado')"  id="fest-prog">🔵 Programados</button>
+    <button class="chip-filtro"        onclick="filtrarEstado('En juego')"    id="fest-live">🟡 En juego</button>
+    <button class="chip-filtro"        onclick="filtrarEstado('Finalizado')"  id="fest-fin">🟢 Finalizados</button>
+    <button class="chip-filtro"        onclick="filtrarEstado('Aplazado')"    id="fest-apl">⚠️ Aplazados</button>
+  </div>
+  <div class="filtros-sep"></div>
+  <div class="filtro-chips" id="filtros-grado">
+    <button class="chip-filtro activo" onclick="filtrarGrado('')"  id="fgr-todos">Todos</button>
+    <button class="chip-filtro"        onclick="filtrarGrado('3')" id="fgr-3">Grado 3°</button>
+    <button class="chip-filtro"        onclick="filtrarGrado('4')" id="fgr-4">Grado 4°</button>
+    <button class="chip-filtro"        onclick="filtrarGrado('5')" id="fgr-5">Grado 5°</button>
+    <button class="chip-filtro"        onclick="filtrarGrado('6')" id="fgr-6">Grado 6°</button>
+    <button class="chip-filtro"        onclick="filtrarGrado('7')" id="fgr-7">Grado 7°</button>
+  </div>
+</div>
+
+<!-- ── LISTA DE PARTIDOS ── -->
+<div id="fixture-contenido">
+  <div class="cargando">
+    <div class="cargando-spinner"></div>
+    Cargando fixture...
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL — INICIAR PARTIDO
+     ══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-iniciar">
+  <div class="modal-box">
+    <div class="modal-title">🟡 Iniciar partido</div>
+    <input type="hidden" id="mi-id-partido">
+    <div class="modal-campo-label">Árbitro asignado</div>
+    <input type="text" class="modal-input" id="mi-arbitro"
+           placeholder="Nombre del árbitro (padre de familia)">
+    <div style="font-size:12px;color:#c0392b;background:#fee2e2;border-radius:8px;padding:8px 12px;margin-bottom:12px">
+      ⚠️ Solo puede haber <strong>un partido activo a la vez</strong> (cancha única).
+      Verifica que la cancha esté libre antes de iniciar.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="cerrarModal('modal-iniciar')">Cancelar</button>
+      <button class="btn-modal-ok" onclick="confirmarIniciar()">▶ Iniciar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL — APLAZAR PARTIDO
+     ══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-aplazar">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ Aplazar partido</div>
+    <input type="hidden" id="ma-id-partido">
+    <div class="modal-campo-label">Motivo del aplazamiento <span style="color:#c0392b">*</span></div>
+    <select class="modal-select" id="ma-motivo">
+      <option value="">— Selecciona el motivo —</option>
+      <option value="Lluvia">Lluvia</option>
+      <option value="Patio ocupado">Patio / cancha ocupada</option>
+      <option value="Equipo no disponible">Equipo no disponible</option>
+      <option value="Evento escolar">Evento escolar</option>
+      <option value="Otro">Otro motivo</option>
+    </select>
+    <div class="modal-campo-label">Nueva fecha tentativa</div>
+    <input type="date" class="modal-input" id="ma-nueva-fecha">
+    <div class="modal-campo-label">Observaciones adicionales</div>
+    <textarea class="modal-textarea" id="ma-obs" rows="2"
+              placeholder="Detalles del aplazamiento..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="cerrarModal('modal-aplazar')">Cancelar</button>
+      <button class="btn-modal-ok" style="background:#c9a227;color:#0a0e1a" onclick="confirmarAplazar()">Aplazar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODAL — FINALIZAR / WO
+     ══════════════════════════════════ -->
+<div class="modal-overlay" id="modal-finalizar">
+  <div class="modal-box">
+    <div class="modal-title" id="mf-titulo">🟢 Finalizar partido</div>
+    <input type="hidden" id="mf-id-partido">
+    <input type="hidden" id="mf-tipo">
+    <div id="mf-cuerpo-normal">
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:14px">
+        <div>
+          <div class="modal-campo-label" id="mf-label-local">Local</div>
+          <input type="number" class="modal-input" id="mf-goles-local"
+                 min="0" max="99" value="0" style="text-align:center;font-size:22px;font-weight:700;margin:0">
+        </div>
+        <div style="font-size:20px;font-weight:700;color:#94a3b8;padding-top:20px">—</div>
+        <div>
+          <div class="modal-campo-label" id="mf-label-visit">Visitante</div>
+          <input type="number" class="modal-input" id="mf-goles-visit"
+                 min="0" max="99" value="0" style="text-align:center;font-size:22px;font-weight:700;margin:0">
+        </div>
+      </div>
+      <div class="modal-campo-label">Observaciones</div>
+      <textarea class="modal-textarea" id="mf-obs" rows="2"
+                placeholder="Incidencias, notas del árbitro..."></textarea>
+    </div>
+    <div id="mf-cuerpo-wo" style="display:none">
+      <div style="background:#fee2e2;border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;color:#c0392b">
+        El partido se marcará como <strong>W.O.</strong> El equipo que no se presentó pierde por defecto.
+      </div>
+      <div class="modal-campo-label">Observaciones</div>
+      <textarea class="modal-textarea" id="mf-obs-wo" rows="2"
+                placeholder="¿Qué equipo no se presentó? Motivo..."></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="cerrarModal('modal-finalizar')">Cancelar</button>
+      <button class="btn-modal-ok verde" id="mf-btn-ok" onclick="confirmarFinalizar()">Guardar resultado</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCRIPTS ── -->
+<script>
+// flagImg global de Shell.html
+
+(function() {
+
+// ── ESTADO ──
+var todosPartidos  = [];
+var filtroEstado   = "";
+var filtroGrado    = "";
+var esAdmin        = false;
+
+// ── CARGAR TODO ──
+function cargarTodo() {
+  verificarAdmin();
+  cargarPartidoEnJuego();
+  cargarPartidos();
+}
+
+// ── VERIFICAR ROL DOCENTE ──
+function verificarAdmin() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      esAdmin = res && res.esAdmin;
+    })
+    .withFailureHandler(function() { esAdmin = false; })
+    .verificarRolDocente();
+}
+
+// ── PARTIDO EN JUEGO ──
+function cargarPartidoEnJuego() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      var banner = document.getElementById("en-juego-banner");
+      if (res.ok && res.datos) {
+        var p = res.datos;
+        var fl = flagImg(p.bandera_local);
+        var fv = flagImg(p.bandera_visitante);
+        document.getElementById("ej-partido").innerHTML =
+          fl + " " + (p.pais_local || p.grupo_local) +
+          "  vs  " +
+          fv + " " + (p.pais_visitante || p.grupo_visitante);
+        document.getElementById("ej-meta").textContent =
+          "Grado " + p.grado + "° · " + p.deporte + " · " + (p.fase || "");
+        var gl = p.goles_local    !== "" ? p.goles_local    : "—";
+        var gv = p.goles_visitante !== "" ? p.goles_visitante : "—";
+        document.getElementById("ej-marcador").textContent = gl + " : " + gv;
+        banner.classList.add("visible");
+      } else {
+        banner.classList.remove("visible");
+      }
+    })
+    .withFailureHandler(function() {
+      document.getElementById("en-juego-banner").classList.remove("visible");
+    })
+    .getPartidoEnJuego();
+}
+
+// ── CARGAR PARTIDOS (AUDITORIA v3: getPartidosPublicos + skeleton loader) ──
+function cargarPartidos() {
+  var cont = document.getElementById("fixture-contenido");
+  // Skeleton loader: da feedback visual inmediato mientras llega la respuesta del servidor
+  cont.innerHTML =
+    '<div style="padding:12px">' +
+    _skeletonCard() + _skeletonCard() + _skeletonCard() +
+    '</div>';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok || !res.datos) {
+        cont.innerHTML = '<div class="sin-datos">Error cargando partidos.</div>';
+        return;
+      }
+      todosPartidos = res.datos;
+      renderPartidos();
+    })
+    .withFailureHandler(function() {
+      cont.innerHTML = '<div class="sin-datos">Error de conexión. Intenta de nuevo.</div>';
+    })
+    .getPartidosPublicos("", "");
+}
+
+function _skeletonCard() {
+  return '<div style="background:var(--color-bg,#f8f8f8);border-radius:10px;padding:16px;margin-bottom:12px;border:0.5px solid rgba(0,0,0,0.08)">' +
+    '<div style="display:flex;gap:12px;align-items:center">' +
+      '<div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(90deg,#e8e8e8 25%,#d8d8d8 50%,#e8e8e8 75%);background-size:200% 100%;animation:sk 1.4s infinite"></div>' +
+      '<div style="flex:1">' +
+        '<div style="height:14px;border-radius:4px;background:linear-gradient(90deg,#e8e8e8 25%,#d8d8d8 50%,#e8e8e8 75%);background-size:200% 100%;animation:sk 1.4s infinite;margin-bottom:8px;width:60%"></div>' +
+        '<div style="height:11px;border-radius:4px;background:linear-gradient(90deg,#e8e8e8 25%,#d8d8d8 50%,#e8e8e8 75%);background-size:200% 100%;animation:sk 1.4s infinite;width:40%"></div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── FILTROS ──
+function filtrarEstado(estado) {
+  filtroEstado = estado;
+  var ids = ["todos","prog","live","fin","apl"];
+  var vals = ["","Programado","En juego","Finalizado","Aplazado"];
+  for (var i = 0; i < ids.length; i++) {
+    var btn = document.getElementById("fest-" + ids[i]);
+    if (btn) btn.className = "chip-filtro" + (vals[i] === estado ? " activo" : "");
+  }
+  renderPartidos();
+}
+window.filtrarEstado = filtrarEstado;
+
+function filtrarGrado(grado) {
+  filtroGrado = grado;
+  var ids = ["todos","3","4","5","6","7"];
+  for (var i = 0; i < ids.length; i++) {
+    var btn = document.getElementById("fgr-" + ids[i]);
+    if (btn) btn.className = "chip-filtro" + (ids[i] === grado ? " activo" : "");
+  }
+  renderPartidos();
+}
+window.filtrarGrado = filtrarGrado;
+
+// ── RENDER PARTIDOS ──
+function renderPartidos() {
+  var cont = document.getElementById("fixture-contenido");
+
+  // Aplicar filtros
+  var filtrados = todosPartidos.filter(function(p) {
+    var okEstado = !filtroEstado || p.estado === filtroEstado;
+    var okGrado  = !filtroGrado  || String(p.grado) === filtroGrado;
+    return okEstado && okGrado;
+  });
+
+  if (filtrados.length === 0) {
+    cont.innerHTML = '<div class="sin-datos">Sin partidos para los filtros seleccionados.<br>Ajusta los filtros o genera el fixture.</div>';
+    return;
+  }
+
+  // Agrupar por grado y deporte
+  var grupos = {};
+  for (var i = 0; i < filtrados.length; i++) {
+    var p   = filtrados[i];
+    var key = "G" + p.grado + "__" + p.deporte;
+    if (!grupos[key]) {
+      grupos[key] = { grado: p.grado, deporte: p.deporte, partidos: [] };
+    }
+    grupos[key].partidos.push(p);
+  }
+
+  // Ordenar grupos por grado
+  var keysOrdenadas = Object.keys(grupos).sort(function(a, b) {
+    var ga = parseInt(grupos[a].grado);
+    var gb = parseInt(grupos[b].grado);
+    return ga - gb;
+  });
+
+  var html        = "";
+  var gradoActual = "";
+
+  for (var k = 0; k < keysOrdenadas.length; k++) {
+    var g = grupos[keysOrdenadas[k]];
+
+    if (g.grado !== gradoActual) {
+      if (gradoActual !== "") html = html + '</div>'; // cerrar grado anterior
+      var nivel = parseInt(g.grado) <= 5 ? "Primaria" : "Bachillerato";
+      html = html +
+        '<div class="grado-group">' +
+        '<div class="grado-group-title">' +
+          '🏅 Grado ' + g.grado + '°' +
+          ' <span class="nivel-badge">' + nivel + '</span>' +
+        '</div>';
+      gradoActual = g.grado;
+    }
+
+    html = html +
+      '<div class="deporte-group-title">' +
+        getIconoDeporte(g.deporte) + ' ' + g.deporte +
+        ' <span style="font-size:11px;color:#94a3b8;font-weight:400">(' + g.partidos.length + ' partidos)</span>' +
+      '</div>';
+
+    // Ordenar partidos por fecha y hora
+    g.partidos.sort(function(a, b) {
+      var fa = String(a.fecha || "") + String(a.hora || "");
+      var fb = String(b.fecha || "") + String(b.hora || "");
+      return fa < fb ? -1 : fa > fb ? 1 : 0;
+    });
+
+    for (var j = 0; j < g.partidos.length; j++) {
+      html = html + renderTarjetaPartido(g.partidos[j]);
+    }
+  }
+
+  if (gradoActual !== "") html = html + '</div>';
+
+  cont.innerHTML = html;
+}
+
+// ── RENDER TARJETA PARTIDO ──
+function renderTarjetaPartido(p) {
+  var estadoKey  = p.estado ? p.estado.toLowerCase().replace(/ /g,"_").replace(/\./g,"") : "programado";
+  var badgeClass = "badge-" + estadoKey;
+  var badgeTexto = getBadgeTexto(p.estado);
+  var esFin      = p.estado === "Finalizado" || p.estado === "W.O.";
+  var esLive     = p.estado === "En juego"   || p.estado === "Medio tiempo";
+  var flagL      = flagImg(p.bandera_local);
+  var flagV      = flagImg(p.bandera_visitante);
+
+  var scoreHtml;
+  if (esFin) {
+    scoreHtml = '<div class="pc-score">' + (p.goles_local || 0) + ' — ' + (p.goles_visitante || 0) + '</div>';
+  } else if (esLive) {
+    scoreHtml = '<div class="pc-score" style="color:#c9a227">' +
+                (p.goles_local || 0) + ' — ' + (p.goles_visitante || 0) + '</div>';
+  } else {
+    scoreHtml = '<div class="pc-score pending">VS</div>';
+  }
+
+  // Acciones según estado y rol
+  var accionesHtml = "";
+  if (esAdmin) {
+    if (p.estado === "Programado") {
+      accionesHtml =
+        '<button class="btn-accion iniciar" onclick="abrirModalIniciar(\'' + p.id_partido + '\')">▶ Iniciar</button>' +
+        '<button class="btn-accion"         onclick="abrirModalAplazar(\'' + p.id_partido + '\')">⚠️ Aplazar</button>';
+    } else if (p.estado === "En juego" || p.estado === "Medio tiempo") {
+      accionesHtml =
+        '<button class="btn-accion finalizar" onclick="abrirModalFinalizar(\'' + p.id_partido + "','" + p.pais_local + "','" + p.pais_visitante + "','normal'" + ')">✓ Finalizar</button>' +
+        '<button class="btn-accion rojo"      onclick="abrirModalFinalizar(\'' + p.id_partido + "','" + p.pais_local + "','" + p.pais_visitante + "','wo'" + ')" style="border-color:#c0392b;color:#c0392b">W.O.</button>';
+    } else if (p.estado === "Finalizado") {
+      accionesHtml =
+        '<button class="btn-accion" onclick="abrirModalFinalizar(\'' + p.id_partido + "','" + p.pais_local + "','" + p.pais_visitante + "','editar'" + ')" style="color:#0047AB;border-color:#0047AB">✏️ Editar</button>';
+    } else if (p.estado === "Aplazado") {
+      accionesHtml =
+        '<button class="btn-accion iniciar" onclick="abrirModalIniciar(\'' + p.id_partido + '\')">▶ Reprogramar</button>';
+    }
+  }
+
+  var aplazadoHtml = "";
+  if (p.estado === "Aplazado" && p.motivo_aplazado) {
+    aplazadoHtml = '<div class="aplazado-motivo">⚠️ Motivo: ' + p.motivo_aplazado +
+                   (p.nueva_fecha_aplazado ? ' · Nueva fecha: ' + p.nueva_fecha_aplazado : '') + '</div>';
+  }
+
+  return (
+    '<div class="partido-card estado-' + estadoKey + '">' +
+      '<div class="pc-header">' +
+        '<div class="pc-meta">' +
+          (p.fecha ? '<span class="pc-meta-item">📅 ' + formatFecha(p.fecha) + '</span>' : '') +
+          (p.hora  ? '<span class="pc-meta-item">⏰ ' + p.hora + '</span>' : '') +
+          '<span class="pc-meta-item">📍 Cancha única</span>' +
+          (p.fase  ? '<span class="pc-meta-item" style="color:#0047AB;font-weight:600">' + p.fase + '</span>' : '') +
+        '</div>' +
+        '<span class="estado-badge ' + badgeClass + '">' + badgeTexto + '</span>' +
+      '</div>' +
+
+      '<div class="pc-body">' +
+        '<div class="pc-equipo local">' +
+          '<div class="pc-flag">' + flagL + '</div>' +
+          '<div class="pc-pais">' + (p.pais_local || p.grupo_local || '—') + '</div>' +
+          '<div class="pc-grupo">Grupo ' + (p.grupo_local || '—') + '</div>' +
+        '</div>' +
+
+        '<div class="pc-marcador">' +
+          scoreHtml +
+          '<div class="pc-fase">' + p.deporte + '</div>' +
+          (!esFin && p.hora ? '<div class="pc-hora">' + p.hora + '</div>' : '') +
+        '</div>' +
+
+        '<div class="pc-equipo visit">' +
+          '<div class="pc-flag">' + flagV + '</div>' +
+          '<div class="pc-pais">' + (p.pais_visitante || p.grupo_visitante || '—') + '</div>' +
+          '<div class="pc-grupo">Grupo ' + (p.grupo_visitante || '—') + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="pc-footer">' +
+        '<span class="pc-arbitro">' +
+          (p.arbitro ? '👤 ' + p.arbitro : '👤 Árbitro por asignar') +
+        '</span>' +
+        '<div class="pc-actions">' + accionesHtml + '</div>' +
+        aplazadoHtml +
+      '</div>' +
+    '</div>'
+  );
+}
+
+// ── MODALES ──
+function abrirModalIniciar(idPartido) {
+  document.getElementById("mi-id-partido").value = idPartido;
+  document.getElementById("mi-arbitro").value    = "";
+  document.getElementById("modal-iniciar").classList.add("visible");
+}
+window.abrirModalIniciar = abrirModalIniciar;
+
+function confirmarIniciar() {
+  var id      = document.getElementById("mi-id-partido").value;
+  var arbitro = document.getElementById("mi-arbitro").value.trim();
+  if (!id) return;
+
+  var btn = document.querySelector("#modal-iniciar .btn-modal-ok");
+  btn.textContent = "Iniciando...";
+  btn.disabled    = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.textContent = "▶ Iniciar";
+      btn.disabled    = false;
+      cerrarModal("modal-iniciar");
+      if (res.ok) {
+        cargarTodo();
+      } else {
+        alert("Error: " + res.mensaje);
+      }
+    })
+    .withFailureHandler(function() {
+      btn.textContent = "▶ Iniciar";
+      btn.disabled    = false;
+      alert("Error de conexión.");
+    })
+    .cambiarEstadoPartido(id, "En juego", "", "");
+}
+window.confirmarIniciar = confirmarIniciar;
+
+function abrirModalAplazar(idPartido) {
+  document.getElementById("ma-id-partido").value = idPartido;
+  document.getElementById("ma-motivo").value     = "";
+  document.getElementById("ma-nueva-fecha").value = "";
+  document.getElementById("ma-obs").value        = "";
+  document.getElementById("modal-aplazar").classList.add("visible");
+}
+window.abrirModalAplazar = abrirModalAplazar;
+
+function confirmarAplazar() {
+  var id      = document.getElementById("ma-id-partido").value;
+  var motivo  = document.getElementById("ma-motivo").value;
+  var fecha   = document.getElementById("ma-nueva-fecha").value;
+  var obs     = document.getElementById("ma-obs").value;
+
+  if (!motivo) { alert("Selecciona el motivo del aplazamiento."); return; }
+
+  var btn = document.querySelector("#modal-aplazar .btn-modal-ok");
+  btn.textContent = "Aplazando...";
+  btn.disabled    = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.textContent = "Aplazar";
+      btn.disabled    = false;
+      cerrarModal("modal-aplazar");
+      if (res.ok) { cargarTodo(); }
+      else { alert("Error: " + res.mensaje); }
+    })
+    .withFailureHandler(function() {
+      btn.textContent = "Aplazar";
+      btn.disabled    = false;
+      alert("Error de conexión.");
+    })
+    .cambiarEstadoPartido(id, "Aplazado", motivo + (obs ? " — " + obs : ""), fecha);
+}
+window.confirmarAplazar = confirmarAplazar;
+
+function abrirModalFinalizar(idPartido, paisLocal, paisVisit, tipo) {
+  document.getElementById("mf-id-partido").value = idPartido;
+  document.getElementById("mf-tipo").value       = tipo;
+  document.getElementById("mf-goles-local").value  = "0";
+  document.getElementById("mf-goles-visit").value  = "0";
+  document.getElementById("mf-obs").value          = "";
+  document.getElementById("mf-obs-wo").value        = "";
+
+  var esWo    = tipo === "wo";
+  var esEditar = tipo === "editar";
+
+  document.getElementById("mf-titulo").textContent =
+    esWo ? "⬛ Marcar como W.O." : esEditar ? "✏️ Editar resultado" : "🟢 Finalizar partido";
+  document.getElementById("mf-label-local").textContent  = paisLocal || "Local";
+  document.getElementById("mf-label-visit").textContent  = paisVisit || "Visitante";
+  document.getElementById("mf-cuerpo-normal").style.display = esWo ? "none" : "block";
+  document.getElementById("mf-cuerpo-wo").style.display     = esWo ? "block" : "none";
+  document.getElementById("mf-btn-ok").textContent =
+    esWo ? "Confirmar W.O." : esEditar ? "Guardar cambios" : "Guardar resultado";
+
+  document.getElementById("modal-finalizar").classList.add("visible");
+}
+window.abrirModalFinalizar = abrirModalFinalizar;
+
+function confirmarFinalizar() {
+  var id    = document.getElementById("mf-id-partido").value;
+  var tipo  = document.getElementById("mf-tipo").value;
+  var esWo  = tipo === "wo";
+  var gl    = parseInt(document.getElementById("mf-goles-local").value)  || 0;
+  var gv    = parseInt(document.getElementById("mf-goles-visit").value)  || 0;
+  var obs   = esWo
+              ? document.getElementById("mf-obs-wo").value
+              : document.getElementById("mf-obs").value;
+  var estado = esWo ? "W.O." : "Finalizado";
+
+  var btn = document.getElementById("mf-btn-ok");
+  btn.textContent = "Guardando...";
+  btn.disabled    = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.textContent = "Guardar resultado";
+      btn.disabled    = false;
+      cerrarModal("modal-finalizar");
+      if (res.ok) { cargarTodo(); }
+      else { alert("Error: " + res.mensaje); }
+    })
+    .withFailureHandler(function() {
+      btn.textContent = "Guardar resultado";
+      btn.disabled    = false;
+      alert("Error de conexión.");
+    })
+    .registrarResultado(id, gl, gv, estado, obs);
+}
+window.confirmarFinalizar = confirmarFinalizar;
+
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove("visible");
+}
+window.cerrarModal = cerrarModal;
+
+// Cerrar modal al hacer click fuera
+document.querySelectorAll(".modal-overlay").forEach(function(m) {
+  m.addEventListener("click", function(e) {
+    if (e.target === m) m.classList.remove("visible");
+  });
+});
+
+// ── HELPERS ──
+function getBadgeTexto(estado) {
+  var map = {
+    "Programado"  : "🔵 Programado",
+    "En juego"    : "🟡 En juego",
+    "Medio tiempo": "🟡 Medio tiempo",
+    "Finalizado"  : "🟢 Finalizado",
+    "Aplazado"    : "⚠️ Aplazado",
+    "Suspendido"  : "🔴 Suspendido",
+    "W.O."        : "⬛ W.O."
+  };
+  return map[estado] || estado || "—";
+}
+
+function getIconoDeporte(dep) {
+  var map = {
+    "Mini Futsal"   : "⚽",
+    "Mini Voleibol" : "🏐",
+    "Futsal"        : "⚽",
+    "Voleibol"      : "🏐"
+  };
+  return map[dep] || "🏅";
+}
+
+/* old flagImg emoji removed */
+
+// AUDITORIA v3: formatFecha corregida para manejar ISO strings con T/Z
+function formatFecha(f) {
+  if (!f) return "";
+  var s = String(f).trim();
+  // Eliminar parte de tiempo si viene en formato ISO (ej: "2026-04-10T05:00:00.000Z")
+  var solofecha = s.split("T")[0];
+  if (solofecha.indexOf("-") !== -1) {
+    var p = solofecha.split("-");
+    if (p.length === 3) {
+      var dia = p[2].substring(0, 2); // solo 2 chars del dia
+      return dia + "/" + p[1] + "/" + p[0];
+    }
+  }
+  return s;
+}
+
+// ── AUTO-REFRESH cada 90 segundos ──
+setInterval(function() {
+  cargarPartidoEnJuego();
+  cargarPartidos();
+}, 90000);
+
+// ── INICIALIZAR ──
+cargarTodo();
+
+})();
+</script>
+</div>

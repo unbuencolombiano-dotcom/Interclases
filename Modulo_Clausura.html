@@ -1,0 +1,488 @@
+<!-- ============================================================
+     Modulo_Clausura.html — Evento de Clausura en Pantalla Grande
+     Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca
+     Consume: getEstadisticasTorneo(), getTablaGeneral(),
+              getPremios(), getPartidos(), getPreseleccion()
+     ============================================================ -->
+
+<div id="modulo-clausura">
+
+<style>
+#modulo-clausura * { box-sizing: border-box; margin: 0; padding: 0; }
+#modulo-clausura {
+  font-family: 'Syne', 'Plus Jakarta Sans', sans-serif;
+  background: #0a0e1a; min-height: 100vh; color: #fff; overflow-x: hidden;
+}
+
+/* ── PANTALLAS ── */
+.cl-pantalla {
+  display: none; min-height: 100vh;
+  flex-direction: column; align-items: center;
+  justify-content: center; padding: 40px 28px;
+  animation: fadeIn .7s ease;
+}
+.cl-pantalla.activa { display: flex; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+
+/* ── PANTALLA 1: RESUMEN ── */
+.cl-titulo-grande {
+  font-size: clamp(28px,5vw,52px); font-weight: 900;
+  text-align: center; line-height: 1.1; margin-bottom: 10px;
+}
+.cl-titulo-grande .dorado { color: #c9a227; }
+.cl-subtitulo {
+  font-size: 15px; color: rgba(255,255,255,.55);
+  text-align: center; margin-bottom: 40px;
+}
+.resumen-stats {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 16px; width: 100%; max-width: 780px; margin-bottom: 40px;
+}
+@media(max-width:560px) { .resumen-stats { grid-template-columns: repeat(2,1fr); } }
+.rst-card {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px; padding: 20px 16px; text-align: center;
+}
+.rst-num { font-size: 36px; font-weight: 900; color: #c9a227; line-height: 1; }
+.rst-lbl { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 4px; }
+.linea-tiempo {
+  width: 100%; max-width: 700px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.lt-hito {
+  display: flex; align-items: flex-start; gap: 14px;
+  animation: entradaHito .5s ease both;
+}
+@keyframes entradaHito { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:none} }
+.lt-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #c9a227; flex-shrink: 0; margin-top: 4px;
+}
+.lt-texto { font-size: 14px; color: rgba(255,255,255,.8); }
+.lt-fecha { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 2px; }
+
+/* ── PANTALLA 2: TABLA FINAL ── */
+.tabla-final-wrap { width: 100%; max-width: 820px; }
+.tf-grado-titulo {
+  font-size: 15px; font-weight: 700; color: #c9a227;
+  margin: 24px 0 10px; display: flex; align-items: center; gap: 8px;
+}
+.tf-tabla {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px; overflow: hidden; margin-bottom: 6px;
+}
+table.tf-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tf-tbl th {
+  padding: 8px 12px; background: rgba(255,255,255,.06);
+  font-size: 10px; font-weight: 600; color: rgba(255,255,255,.4);
+  text-align: center; text-transform: uppercase; letter-spacing: .5px;
+}
+table.tf-tbl th:nth-child(2) { text-align: left; }
+table.tf-tbl td {
+  padding: 10px 12px; text-align: center;
+  border-top: 1px solid rgba(255,255,255,.05); color: rgba(255,255,255,.85);
+}
+table.tf-tbl td:nth-child(2) { text-align: left; }
+table.tf-tbl tr.lider-row { background: rgba(201,162,39,.12); }
+.tf-pts { font-size: 15px; font-weight: 700; color: #c9a227; }
+.tf-eq-cel { display: flex; align-items: center; gap: 8px; }
+.tf-flag   { font-size: 20px; line-height: 1; }
+
+/* ── PANTALLA 3: RECONOCIMIENTOS ── */
+.reconoc-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+  gap: 14px; width: 100%; max-width: 900px;
+}
+.reconoc-card {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px; padding: 18px 16px; text-align: center;
+  animation: entradaCard .4s ease both;
+}
+@keyframes entradaCard { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:none} }
+.reconoc-card.camp { border-color: rgba(201,162,39,.5); background: rgba(201,162,39,.1); }
+.rec-icon   { font-size: 32px; margin-bottom: 8px; }
+.rec-titulo { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.6); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+.rec-ganador { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.2; }
+.rec-grupo   { font-size: 11px; color: rgba(255,255,255,.45); margin-top: 3px; }
+.rec-pendiente { font-size: 12px; color: rgba(255,255,255,.3); font-style: italic; }
+
+/* ── PANTALLA 4: AGRADECIMIENTOS ── */
+.agra-lista { width: 100%; max-width: 600px; }
+.agra-grupo { margin-bottom: 28px; text-align: center; }
+.agra-grupo-titulo {
+  font-size: 13px; color: #c9a227; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
+}
+.agra-nombre {
+  font-size: 18px; font-weight: 600; color: #fff;
+  margin-bottom: 8px; animation: entradaHito .5s ease both;
+}
+.agra-rol { font-size: 12px; color: rgba(255,255,255,.4); margin-bottom: 6px; }
+
+/* ── PANTALLA 5: CIERRE ── */
+.cierre-bandera { font-size: 80px; animation: ondear 2s ease-in-out infinite; }
+@keyframes ondear { 0%,100%{transform:rotate(-5deg)} 50%{transform:rotate(5deg)} }
+.cierre-frase {
+  font-size: clamp(18px,3.5vw,32px); font-weight: 900;
+  text-align: center; color: #c9a227; margin: 20px 0 10px;
+}
+.cierre-sub { font-size: 15px; color: rgba(255,255,255,.6); text-align: center; margin-bottom: 32px; }
+.proximos-wrap {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15);
+  border-radius: 16px; padding: 20px 24px; max-width: 500px; width: 100%; text-align: center;
+}
+.prox-titulo { font-size: 13px; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.prox-evento { font-size: 18px; font-weight: 700; color: #fff; }
+.prox-sub    { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 4px; }
+
+/* ── CONTROL BAR ── */
+.cl-control {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(10,14,26,.96); border-top: 1px solid rgba(255,255,255,.1);
+  padding: 12px 24px; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; z-index: 100;
+  backdrop-filter: blur(10px);
+}
+.cl-ctrl-titulo { font-size: 13px; color: rgba(255,255,255,.5); }
+.cl-ctrl-titulo strong { color: #c9a227; }
+.cl-ctrl-btns  { display: flex; gap: 10px; align-items: center; }
+.btn-cl {
+  padding: 9px 20px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.08); color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Syne', sans-serif; transition: all .2s;
+}
+.btn-cl:hover   { background: rgba(255,255,255,.16); }
+.btn-cl.dorado  { background: #c9a227; border-color: #c9a227; color: #0a0e1a; }
+.btn-cl.dorado:hover { background: #b8911f; }
+.btn-cl:disabled { opacity: .4; cursor: not-allowed; }
+.cl-num { font-size: 12px; color: rgba(255,255,255,.35); font-weight: 600; }
+
+/* ── CONFETTI ── */
+#cl-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+</style>
+
+<!-- CONFETTI -->
+<canvas id="cl-confetti"></canvas>
+
+<!-- ════════════════════ P1 — RESUMEN ════════════════════ -->
+<div class="cl-pantalla activa" id="cl-pan-1">
+  <div class="cl-titulo-grande">
+    ⚽ Mundial <span class="dorado">GABO</span> 2026
+  </div>
+  <div class="cl-subtitulo">Resumen final del torneo · I.E. GABO · Cartago</div>
+
+  <div class="resumen-stats">
+    <div class="rst-card"><div class="rst-num" id="r-partidos">—</div><div class="rst-lbl">Partidos jugados</div></div>
+    <div class="rst-card"><div class="rst-num" id="r-goles">—</div><div class="rst-lbl">Goles totales</div></div>
+    <div class="rst-card"><div class="rst-num" id="r-equipos">—</div><div class="rst-lbl">Equipos</div></div>
+    <div class="rst-card"><div class="rst-num" id="r-jugadores">—</div><div class="rst-lbl">Jugadores</div></div>
+  </div>
+
+  <div class="linea-tiempo" id="linea-tiempo">
+    <div class="lt-hito" style="animation-delay:.1s"><div class="lt-dot"></div><div><div class="lt-texto">🚀 Inicio del torneo — Ceremonia de apertura</div><div class="lt-fecha">Fecha de inicio</div></div></div>
+    <div class="lt-hito" style="animation-delay:.2s"><div class="lt-dot"></div><div><div class="lt-texto">⚽ Fase de grupos — Todos los grados en cancha</div></div></div>
+    <div class="lt-hito" style="animation-delay:.3s"><div class="lt-dot"></div><div><div class="lt-texto">🏆 Finales — Los mejores equipos por grado</div></div></div>
+    <div class="lt-hito" style="animation-delay:.4s"><div class="lt-dot"></div><div><div class="lt-texto">🌟 Repechaje inter-grados — Confraternización y talentos</div></div></div>
+    <div class="lt-hito" style="animation-delay:.5s"><div class="lt-dot"></div><div><div class="lt-texto">🎉 Ceremonia de clausura — ¡Hoy!</div></div></div>
+  </div>
+</div>
+
+<!-- ════════════════════ P2 — TABLA FINAL ════════════════════ -->
+<div class="cl-pantalla" id="cl-pan-2">
+  <div class="cl-titulo-grande">📊 Tabla <span class="dorado">Final</span></div>
+  <div class="cl-subtitulo">Clasificación general acumulada de todos los deportes</div>
+  <div class="tabla-final-wrap" id="tabla-final-body">
+    <div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">Cargando...</div>
+  </div>
+</div>
+
+<!-- ════════════════════ P3 — RECONOCIMIENTOS ════════════════════ -->
+<div class="cl-pantalla" id="cl-pan-3">
+  <div class="cl-titulo-grande">🏅 <span class="dorado">Reconocimientos</span></div>
+  <div class="cl-subtitulo">Los grandes del Mundial GABO 2026</div>
+  <div class="reconoc-grid" id="reconoc-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:rgba(255,255,255,.4)">Cargando...</div>
+  </div>
+</div>
+
+<!-- ════════════════════ P4 — AGRADECIMIENTOS ════════════════════ -->
+<div class="cl-pantalla" id="cl-pan-4">
+  <div class="cl-titulo-grande">💛 <span class="dorado">Gracias</span> a todos</div>
+  <div class="cl-subtitulo">El torneo fue posible gracias a</div>
+
+  <div class="agra-lista">
+    <div class="agra-grupo">
+      <div class="agra-grupo-titulo">⚖️ Árbitros</div>
+      <div class="agra-nombre" style="animation-delay:.1s">Consejo de Padres de Familia</div>
+      <div class="agra-rol">Por garantizar el juego limpio en cada partido</div>
+    </div>
+    <div class="agra-grupo">
+      <div class="agra-grupo-titulo">🏫 Directivos</div>
+      <div class="agra-nombre" style="animation-delay:.2s">Rectora y Coordinadores</div>
+      <div class="agra-rol">I.E. GABO · Cartago, Valle del Cauca</div>
+    </div>
+    <div class="agra-grupo">
+      <div class="agra-grupo-titulo">🎽 Organizador</div>
+      <div class="agra-nombre" style="animation-delay:.3s">Elkin Dario Florez Valderrama</div>
+      <div class="agra-rol">Docente responsable · Jornada Tarde</div>
+    </div>
+    <div class="agra-grupo">
+      <div class="agra-grupo-titulo">🌟 Protagonistas</div>
+      <div class="agra-nombre" style="animation-delay:.4s">Todos los estudiantes participantes</div>
+      <div class="agra-nombre" style="animation-delay:.5s" id="agra-stat-jug">Grados 3° al 7°</div>
+      <div class="agra-rol">¡Gracias por su esfuerzo, dedicación y deportividad!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ P5 — CIERRE ════════════════════ -->
+<div class="cl-pantalla" id="cl-pan-5">
+  <div class="cierre-bandera">🇨🇴</div>
+  <div class="cierre-frase">¡Hasta el próximo Mundial GABO!</div>
+  <div class="cierre-sub">I.E. GABO · Cartago, Valle del Cauca · 2026</div>
+
+  <div class="proximos-wrap">
+    <div class="prox-titulo">Próximos eventos</div>
+    <div class="prox-evento">🏅 Intercolegiados 2026</div>
+    <div class="prox-sub">Los pre-seleccionados de hoy representarán al GABO</div>
+  </div>
+
+  <div style="margin-top:36px;text-align:center">
+    <div style="font-size:13px;color:rgba(255,255,255,.35)">
+      Plataforma desarrollada para I.E. GABO · Jornada Tarde · 2026
+    </div>
+    <button style="margin-top:14px;padding:10px 24px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:transparent;color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;font-family:'Syne',sans-serif" onclick="lanzarConfetti()">
+      🎉 ¡Celebrar!
+    </button>
+  </div>
+</div>
+
+<!-- ── BARRA DE CONTROL ── -->
+<div class="cl-control">
+  <div class="cl-ctrl-titulo">
+    <strong id="cl-nombre-pan">Resumen del torneo</strong>
+  </div>
+  <div class="cl-ctrl-btns">
+    <button class="btn-cl" id="cl-btn-ant" onclick="panAnterior()" disabled>← Anterior</button>
+    <span class="cl-num" id="cl-num-pan">1 / 5</span>
+    <button class="btn-cl dorado" id="cl-btn-sig" onclick="panSiguiente()">Siguiente →</button>
+  </div>
+</div>
+
+<script>
+// ── flagImg(codigo) — FlagCDN v2 (reemplaza getBanderaEmoji/flag) ──
+function flagImg(cod,sz){
+  if(!cod||!String(cod).trim()) return '<span style="opacity:.3">&#x1F3F3;</span>';
+  var c=String(cod).toLowerCase().trim();
+  return '<img src="https://flagcdn.com/w40/'+c+'.png" alt="'+c.toUpperCase()+'" style="width:'+(sz?sz+'px':'1.6em')+';height:auto;vertical-align:middle;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.3);" onerror="this.style.display=\'none\'">';
+}
+// Alias de compatibilidad hacia atras
+if(typeof getBanderaEmoji==='undefined') var getBanderaEmoji=flagImg;
+
+(function() {
+
+var PAN_ACTUAL  = 1;
+var TOTAL_PANS  = 5;
+var NOMBRES_PAN = ["Resumen del torneo","Tabla final","Reconocimientos","Agradecimientos","Cierre"];
+
+// ── NAVEGACION ──
+function mostrarPan(num) {
+  document.getElementById("cl-pan-" + PAN_ACTUAL).classList.remove("activa");
+  PAN_ACTUAL = num;
+  document.getElementById("cl-pan-" + num).classList.add("activa");
+  document.getElementById("cl-nombre-pan").textContent  = NOMBRES_PAN[num - 1];
+  document.getElementById("cl-num-pan").textContent     = num + " / " + TOTAL_PANS;
+  document.getElementById("cl-btn-ant").disabled        = (num === 1);
+  document.getElementById("cl-btn-sig").textContent     = num === TOTAL_PANS ? "🎉 Celebrar" : "Siguiente →";
+  if (num === TOTAL_PANS) document.getElementById("cl-btn-sig").onclick = lanzarConfetti;
+  else                    document.getElementById("cl-btn-sig").onclick = panSiguiente;
+
+  if (num === 2) cargarTablaFinal();
+  if (num === 3) cargarReconocimientos();
+}
+function panSiguiente()  { if (PAN_ACTUAL < TOTAL_PANS) mostrarPan(PAN_ACTUAL + 1); }
+function panAnterior()   { if (PAN_ACTUAL > 1)          mostrarPan(PAN_ACTUAL - 1); }
+window.panSiguiente = panSiguiente;
+window.panAnterior  = panAnterior;
+
+document.addEventListener("keydown", function(e) {
+  if (e.key === "ArrowRight" || e.key === " ") panSiguiente();
+  if (e.key === "ArrowLeft")                    panAnterior();
+});
+
+// ── RESUMEN ──
+function cargarResumen() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) return;
+      var s = res.datos;
+      document.getElementById("r-partidos").textContent = s.partidos_jugados  || "0";
+      document.getElementById("r-goles").textContent    = s.total_goles        || "0";
+      document.getElementById("r-equipos").textContent  = s.total_equipos      || "0";
+      document.getElementById("r-jugadores").textContent = s.total_jugadores   || "0";
+      document.getElementById("agra-stat-jug").textContent =
+        (s.total_jugadores || "0") + " jugadores participantes";
+    })
+    .withFailureHandler(function() {})
+    .getEstadisticasTorneo();
+}
+
+// ── TABLA FINAL ──
+function cargarTablaFinal() {
+  var body = document.getElementById("tabla-final-body");
+  if (body.innerHTML.trim() !== '<div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">Cargando...</div>' &&
+      body.innerHTML.trim() !== "") return;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        body.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">Sin datos de clasificación aún.</div>';
+        return;
+      }
+      renderTablaFinal(res.datos);
+      lanzarConfetti();
+    })
+    .withFailureHandler(function() {
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">Error cargando tabla.</div>';
+    })
+    .getTablaGeneral();
+}
+
+function renderTablaFinal(lista) {
+  var body = document.getElementById("tabla-final-body");
+  var html = '<div class="tf-grado-titulo">🏆 Clasificación General Final</div>';
+  html = html + '<div class="tf-tabla">';
+  html = html + '<table class="tf-tbl"><thead><tr>';
+  html = html + '<th>#</th><th style="text-align:left">Equipo</th><th>PJ</th><th>GF</th><th>GC</th><th>Pts</th>';
+  html = html + '</tr></thead><tbody>';
+
+  for (var i = 0; i < lista.length; i++) {
+    var eq   = lista[i];
+    var fl   = flagImg(eq.bandera);
+    var esLider = (i === 0);
+    html = html +
+      '<tr class="' + (esLider ? "lider-row" : "") + '">' +
+        '<td style="font-weight:700;color:' + (esLider ? '#c9a227' : 'rgba(255,255,255,.4)') + '">' +
+          (esLider ? '👑' : (i + 1)) +
+        '</td>' +
+        '<td><div class="tf-eq-cel"><span class="tf-flag">' + fl + '</span>' +
+          '<div><div style="font-weight:600">' + (eq.pais || eq.grupo) + '</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,.3)">Grupo ' + eq.grupo + '</div></div>' +
+        '</div></td>' +
+        '<td>' + (eq.pj || 0) + '</td>' +
+        '<td>' + (eq.gf || 0) + '</td>' +
+        '<td>' + (eq.gc || 0) + '</td>' +
+        '<td class="tf-pts">' + (eq.puntos || 0) + '</td>' +
+      '</tr>';
+  }
+  html = html + '</tbody></table></div>';
+  body.innerHTML = html;
+}
+
+// ── RECONOCIMIENTOS ──
+function cargarReconocimientos() {
+  var grid = document.getElementById("reconoc-grid");
+  if (grid.children.length > 1) return;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      renderReconocimientos(res.ok ? (res.datos || []) : []);
+    })
+    .withFailureHandler(function() { renderReconocimientos([]); })
+    .getPremios();
+}
+
+function renderReconocimientos(premios) {
+  var grid  = document.getElementById("reconoc-grid");
+  var mapa  = {};
+  for (var i = 0; i < premios.length; i++) {
+    mapa[premios[i].categoria] = premios[i];
+  }
+
+  var cats = [
+    { cat:"Campeón Grado 3°",        icon:"🥇", tipo:"camp" },
+    { cat:"Campeón Grado 4°",        icon:"🥇", tipo:"camp" },
+    { cat:"Campeón Grado 5°",        icon:"🥇", tipo:"camp" },
+    { cat:"Campeón Grado 6°",        icon:"🥇", tipo:"camp" },
+    { cat:"Campeón Grado 7°",        icon:"🥇", tipo:"camp" },
+    { cat:"Máximo Goleador",          icon:"⚽", tipo:"" },
+    { cat:"Mejor Portero/a",          icon:"🧤", tipo:"" },
+    { cat:"MVP del Torneo",           icon:"🌟", tipo:"" },
+    { cat:"Premio a la Deportividad", icon:"🤝", tipo:"" },
+    { cat:"Revelación del Torneo",    icon:"💪", tipo:"" },
+    { cat:"Campeón del Repechaje",    icon:"🔥", tipo:"" }
+  ];
+
+  var html = "";
+  for (var j = 0; j < cats.length; j++) {
+    var c   = cats[j];
+    var reg = mapa[c.cat];
+    var delay = (j * 0.08).toFixed(2);
+    html = html +
+      '<div class="reconoc-card ' + (c.tipo === "camp" ? "camp" : "") + '"' +
+           ' style="animation-delay:' + delay + 's">' +
+        '<div class="rec-icon">' + c.icon + '</div>' +
+        '<div class="rec-titulo">' + c.cat + '</div>' +
+        (reg && reg.nombre_ganador
+          ? '<div class="rec-ganador">' + reg.nombre_ganador + '</div>' +
+            (reg.grupo ? '<div class="rec-grupo">Grupo ' + reg.grupo + '</div>' : '')
+          : '<div class="rec-pendiente">Por definir</div>') +
+      '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+// ── CONFETTI ──
+var confParts = [];
+var confActivo = false;
+function lanzarConfetti() {
+  var cv  = document.getElementById("cl-confetti");
+  var ctx = cv.getContext("2d");
+  cv.width  = window.innerWidth;
+  cv.height = window.innerHeight;
+
+  for (var i = 0; i < 150; i++) {
+    confParts.push({
+      x: Math.random() * cv.width, y: -20,
+      w: 7 + Math.random() * 7, h: 4 + Math.random() * 4,
+      color: ["#c9a227","#0047AB","#1a7a4a","#fff","#c0392b"][Math.floor(Math.random() * 5)],
+      vx: (Math.random() - .5) * 6, vy: 3 + Math.random() * 5,
+      rot: Math.random() * 360, rs: (Math.random() - .5) * 8
+    });
+  }
+  if (confActivo) return;
+  confActivo = true;
+
+  function animar() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    var vivas = [];
+    for (var j = 0; j < confParts.length; j++) {
+      var p = confParts[j];
+      p.x += p.vx; p.y += p.vy; p.rot += p.rs; p.vy += .1;
+      if (p.y < cv.height + 40) vivas.push(p);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
+    }
+    confParts = vivas;
+    if (confParts.length > 0) requestAnimationFrame(animar);
+    else { confActivo = false; ctx.clearRect(0, 0, cv.width, cv.height); }
+  }
+  animar();
+}
+window.lanzarConfetti = lanzarConfetti;
+
+window.addEventListener("resize", function() {
+  var cv = document.getElementById("cl-confetti");
+  cv.width = window.innerWidth; cv.height = window.innerHeight;
+});
+
+/* old flagImg emoji removed */
+
+cargarResumen();
+
+})();
+</script>
+</div>

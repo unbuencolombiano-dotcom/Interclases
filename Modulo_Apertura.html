@@ -1,0 +1,1543 @@
+<!-- ============================================================
+     Modulo_Apertura.html v5 -- Ceremonia Cinematografica
+     Mundial GABO 2026 * I.E. GABO * Cartago, Valle del Cauca
+     5 Actos: Intro+Countdown | Paises | Desfile | Sorteo+Fixture | Premios
+     Modo Preview: sorteo sin escritura en BD
+     Gemini IA: frases de delegaciones + comentarios de sorteo
+     ============================================================ -->
+<div id="modulo-apertura">
+<style>
+#modulo-apertura,#modulo-apertura *{box-sizing:border-box;margin:0;padding:0;}
+#modulo-apertura{font-family:'Syne','Plus Jakarta Sans',sans-serif;background:#020408;min-height:100vh;color:#fff;overflow-x:hidden;position:relative;}
+
+/* Modo pantalla completa — ocupar TODO el viewport */
+:fullscreen #modulo-apertura,
+:-webkit-full-screen #modulo-apertura,
+:-moz-full-screen #modulo-apertura {
+  width:100vw;min-height:100vh;overflow-y:auto;
+}
+:fullscreen .ap-ctrl,
+:-webkit-full-screen .ap-ctrl,
+:-moz-full-screen .ap-ctrl {
+  position:fixed;bottom:0;left:0;right:0;
+}
+/* Ocultar cursor tras 3s de inactividad en fullscreen */
+:fullscreen body { cursor:none; }
+:fullscreen body:hover { cursor:default; }
+
+.ap-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 15% 15%,rgba(0,71,171,.22) 0%,transparent 55%),
+             radial-gradient(ellipse 60% 80% at 85% 85%,rgba(201,162,39,.12) 0%,transparent 55%),
+             radial-gradient(ellipse 50% 50% at 50% 0%,rgba(26,122,74,.10) 0%,transparent 45%);}
+.ap-grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.03;
+  background:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);
+  background-size:48px 48px;}
+#ap-particles{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+.ap-pan{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:32px 40px 110px;position:relative;z-index:1;width:100%;}
+.ap-pan.activa{display:flex;animation:apIn .65s cubic-bezier(.22,1,.36,1);}
+/* Contenedor interior de cada acto — ancho generoso para proyector */
+.ap-pan-inner{width:100%;max-width:min(1400px,95vw);}
+@keyframes apIn{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:none;}}
+
+/* Botón fullscreen en barra ctrl */
+#btn-fs{
+  padding:7px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);
+  font-size:13px;cursor:pointer;transition:all .2s;flex-shrink:0;
+  font-family:'Syne',sans-serif;
+}
+#btn-fs:hover{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4);}
+#btn-fs.activo{border-color:rgba(201,162,39,.6);color:#c9a227;background:rgba(201,162,39,.1);}
+
+.ap-pill{display:inline-flex;align-items:center;gap:7px;background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.28);border-radius:100px;padding:5px 16px;font-size:10px;font-weight:700;letter-spacing:.22em;color:#c9a227;text-transform:uppercase;margin-bottom:18px;}
+
+.ap-h1{font-family:'Syne',sans-serif;font-weight:900;font-size:clamp(38px,9vw,96px);line-height:.95;text-align:center;letter-spacing:-.02em;}
+.ap-h1 .gold{color:#c9a227;text-shadow:0 0 60px rgba(201,162,39,.4);}
+.ap-sub{font-size:clamp(13px,2vw,17px);color:rgba(255,255,255,.45);text-align:center;margin-top:10px;}
+
+.btn-ap{display:inline-flex;align-items:center;gap:10px;padding:16px 42px;border-radius:100px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:15px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;background:linear-gradient(135deg,#c9a227 0%,#e8c53a 50%,#b8911f 100%);color:#020408;box-shadow:0 0 0 0 rgba(201,162,39,.5);transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden;}
+.btn-ap::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.2),transparent);opacity:0;transition:opacity .2s;}
+.btn-ap:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 40px rgba(201,162,39,.5);}
+.btn-ap:hover::before{opacity:1;}
+.btn-ap:active{transform:scale(.98);}
+.btn-ap:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-ap.sec{background:transparent;border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);box-shadow:none;}
+.btn-ap.sec:hover{border-color:rgba(255,255,255,.5);color:#fff;box-shadow:none;}
+
+#preview-badge{position:fixed;top:12px;right:16px;z-index:9999;background:rgba(255,150,0,.92);color:#000;padding:5px 14px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:none;}
+#preview-badge.vis{display:block;}
+
+.ap-ctrl{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(2,4,8,.94);border-top:1px solid rgba(255,255,255,.07);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;backdrop-filter:blur(16px);}
+.ap-ctrl-info{min-width:0;}
+.ap-ctrl-titulo{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ap-ctrl-hint{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px;}
+.ap-ctrl-btns{display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.btn-c{padding:8px 18px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:rgba(255,255,255,.8);font-size:12px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;}
+.btn-c:hover{background:rgba(255,255,255,.14);color:#fff;}
+.btn-c.g{background:linear-gradient(135deg,#c9a227,#b8911f);border-color:#c9a227;color:#020408;}
+.btn-c.g:hover{filter:brightness(1.1);}
+.btn-c:disabled{opacity:.3;cursor:not-allowed;}
+.ctrl-n{font-size:11px;color:rgba(255,255,255,.3);font-weight:600;padding:0 4px;}
+
+/* === ACTO 1 === */
+.intro-flag{font-size:88px;animation:floatF 3s ease-in-out infinite;margin-bottom:20px;}
+@keyframes floatF{0%,100%{transform:rotate(-5deg) scale(1);}50%{transform:rotate(5deg) scale(1.08);}}
+
+#ap-cd-wrap{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;position:absolute;inset:0;z-index:10;background:#020408;}
+#ap-cd-wrap.on{display:flex;animation:apIn .3s ease;}
+.cd-n{font-family:'Syne',sans-serif;font-weight:900;font-size:clamp(160px,35vw,290px);line-height:1;color:#c9a227;text-align:center;text-shadow:0 0 80px rgba(201,162,39,.6),0 0 160px rgba(201,162,39,.3);animation:cdPulse .85s ease;}
+@keyframes cdPulse{0%{transform:scale(1.5);opacity:0;}40%{transform:scale(1.06);opacity:1;}100%{transform:scale(1);opacity:1;}}
+.cd-lbl{font-size:13px;letter-spacing:.3em;color:rgba(255,255,255,.3);text-transform:uppercase;margin-top:8px;}
+.cd-flash{position:fixed;inset:0;pointer-events:none;z-index:9;background:rgba(201,162,39,.1);opacity:0;transition:opacity .05s;}
+.cd-flash.on{opacity:1;}
+
+/* === ACTO 2 - PAISES === */
+.ptabs{display:flex;gap:6px;margin-bottom:22px;flex-wrap:wrap;justify-content:center;}
+.ptab{padding:6px 18px;border-radius:100px;border:1.5px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.45);font-size:11px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;}
+.ptab:hover{border-color:rgba(201,162,39,.5);color:rgba(201,162,39,.8);}
+.ptab.on{background:#c9a227;border-color:#c9a227;color:#020408;}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;width:100%;max-width:min(1400px,95vw);}
+.pcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:22px 14px;text-align:center;transition:all .3s;animation:apIn .45s ease both;}
+.pcard:hover{background:rgba(255,255,255,.08);transform:translateY(-4px);border-color:rgba(201,162,39,.35);}
+.p-flag-wrap{font-size:52px;line-height:1;margin-bottom:12px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.3));}
+.p-nombre{font-size:clamp(13px,1.4vw,18px);font-weight:800;color:#fff;margin-bottom:3px;}
+.p-grupo{font-size:clamp(10px,1vw,12px);color:rgba(255,255,255,.35);}
+.p-nivel{font-size:10px;color:#c9a227;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+/* CSS flag fallback */
+.flag-css{width:60px;height:40px;border-radius:6px;margin:0 auto 10px;overflow:hidden;}
+
+/* === ACTO 3 - DESFILE === */
+/* Sin max-width — ocupa todo el ancho disponible en proyector */
+.del-escena{
+  width:100%;max-width:min(1400px,95vw);
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+  border-radius:28px;padding:40px 48px;
+  position:relative;overflow:hidden;animation:apIn .5s ease;
+}
+.del-escena::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#c9a227,#0047AB,#c9a227);background-size:200%;animation:shim 2s linear infinite;}
+@keyframes shim{0%{background-position:0%;}100%{background-position:200%;}}
+
+/* Header: bandera + nombre país */
+.del-hdr{display:flex;align-items:center;gap:28px;margin-bottom:28px;}
+.del-flag-big{
+  flex-shrink:0;
+  /* La bandera img ya tiene su tamaño desde flagImg(bandCod,"96") */
+}
+.del-flag-big img{
+  width:clamp(80px,10vw,120px);height:auto;
+  border-radius:10px;
+  box-shadow:0 6px 28px rgba(0,0,0,.5);
+}
+.del-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(0,71,171,.2);border:1px solid rgba(0,71,171,.4);border-radius:100px;padding:4px 14px;font-size:clamp(9px,1vw,11px);font-weight:700;letter-spacing:.15em;color:#6fa0ff;text-transform:uppercase;margin-bottom:10px;}
+.del-pais{font-family:'Syne',sans-serif;font-size:clamp(36px,5.5vw,72px);font-weight:900;line-height:1;margin-bottom:6px;}
+.del-g{font-size:clamp(14px,1.5vw,18px);color:rgba(255,255,255,.4);}
+
+/* Frase IA — más grande y visible */
+.del-frase{
+  background:rgba(201,162,39,.07);border-left:4px solid #c9a227;
+  padding:16px 22px;border-radius:0 14px 14px 0;
+  font-size:clamp(14px,1.8vw,20px);font-style:italic;
+  color:rgba(255,255,255,.8);margin-bottom:28px;line-height:1.6;min-height:52px;
+}
+.del-frase.ldg::after{content:'.';animation:dots3 1.2s steps(3,end) infinite;}
+@keyframes dots3{0%,100%{content:'.';}33%{content:'..';}66%{content:'...';}  }
+
+/* Grid equipos: lado a lado, grande para proyector */
+.del-eqs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:clamp(14px,2vw,28px);
+}
+@media(max-width:640px){.del-eqs{grid-template-columns:1fr;}}
+.del-eq{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:18px;padding:clamp(18px,2.5vw,30px);
+}
+/* Cabecera del equipo con bandera inline */
+.del-eq-sp{
+  display:flex;align-items:center;gap:10px;
+  font-size:clamp(10px,1.2vw,13px);font-weight:700;letter-spacing:.15em;
+  text-transform:uppercase;color:#c9a227;margin-bottom:14px;
+  padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07);
+}
+.del-eq-sp img{border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.4);}
+/* Nombre del equipo — tamaño proyector */
+.del-eq-nom{
+  font-size:clamp(16px,2.2vw,28px);font-weight:900;
+  color:#fff;margin-bottom:10px;line-height:1.1;
+}
+/* Capitán — claramente visible desde lejos */
+.del-eq-cap{
+  display:flex;align-items:center;gap:8px;
+  font-size:clamp(14px,1.8vw,20px);color:rgba(255,255,255,.6);
+  margin-bottom:12px;
+}
+/* Lista de jugadores — chips más grandes */
+.del-eq-jugs{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;}
+.jug-chip{
+  font-size:clamp(10px,1.1vw,13px);
+  padding:4px 12px;border-radius:100px;
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);
+  font-weight:500;
+}
+
+/* Barra de progreso */
+.del-prog{display:flex;align-items:center;justify-content:space-between;margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);}
+.del-pbar{flex:1;height:5px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin:0 18px;}
+.del-pfill{height:100%;background:#c9a227;border-radius:4px;transition:width .4s ease;}
+.del-ptxt{font-size:clamp(11px,1.2vw,14px);color:rgba(255,255,255,.3);white-space:nowrap;}
+
+/* ════════════════════════════════════════
+   ACTO 4 — CSS SORTEO MUNDIALISTA v4
+   Glassmorphism + Balotas 2.5D + Banderas
+   ════════════════════════════════════════ */
+.sorteo-wrap{
+  width:100%;max-width:min(1400px,95vw);
+  display:grid;grid-template-columns:460px 1fr;gap:24px;align-items:start;
+}
+@media(max-width:960px){.sorteo-wrap{grid-template-columns:1fr;}}
+
+/* Panel izquierdo */
+.bombo-panel{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:28px;padding:24px 20px;text-align:center;
+  position:relative;overflow:hidden;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 20px 60px rgba(0,0,0,.4);
+}
+.bombo-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,#c9a227,transparent);
+  background-size:200%;animation:shim 2.5s linear infinite;
+}
+.bombo-panel::after{
+  content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:300px;height:200px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(201,162,39,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.r-titulo{font-family:'Syne',sans-serif;font-size:16px;font-weight:900;color:#c9a227;margin-bottom:3px;}
+.r-sub{font-size:11px;color:rgba(255,255,255,.4);margin-bottom:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.r-cats{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;max-height:58px;overflow-y:auto;}
+.rcat{padding:3px 9px;border-radius:100px;border:1px solid rgba(255,255,255,.1);font-size:9px;font-weight:700;color:rgba(255,255,255,.3);transition:all .3s;white-space:nowrap;}
+.rcat.act{border-color:#c9a227;color:#c9a227;background:rgba(201,162,39,.1);}
+.rcat.dn{border-color:rgba(26,122,74,.4);color:#4ade80;background:rgba(26,122,74,.08);}
+
+/* ── Escenario del bombo ── */
+.bombo-escenario{position:relative;width:280px;height:280px;margin:0 auto 20px;}
+
+/* Contenedor de cristal esmerilado */
+.bombo-cristal{
+  position:absolute;inset:0;border-radius:50%;
+  background:
+    radial-gradient(circle at 30% 25%,rgba(255,255,255,.14) 0%,transparent 50%),
+    radial-gradient(circle at 70% 75%,rgba(0,20,80,.4) 0%,transparent 55%),
+    rgba(8,16,50,.55);
+  backdrop-filter:blur(18px) saturate(1.4);
+  -webkit-backdrop-filter:blur(18px) saturate(1.4);
+  border:1.5px solid rgba(255,255,255,.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -1px 0 rgba(0,0,0,.3),
+    0 0 0 1px rgba(201,162,39,.3),
+    0 0 40px rgba(201,162,39,.12),
+    0 20px 60px rgba(0,0,0,.6);
+  overflow:hidden;transition:box-shadow .4s;z-index:1;
+}
+.bombo-cristal::before{
+  content:'';position:absolute;top:8%;left:15%;width:40%;height:18%;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(255,255,255,.35) 0%,transparent 100%);
+  transform:rotate(-25deg);pointer-events:none;
+}
+.bombo-cristal::after{
+  content:'';position:absolute;bottom:10%;right:12%;width:30%;height:12%;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(255,255,255,.08) 0%,transparent 100%);
+  pointer-events:none;
+}
+.bombo-cristal.mezclando{
+  animation:cristalMezcla .4s ease-in-out infinite alternate;
+}
+@keyframes cristalMezcla{
+  0%{box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 0 2px rgba(201,162,39,.7),0 0 60px rgba(201,162,39,.5),0 20px 60px rgba(0,0,0,.6);}
+  100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 0 3px rgba(201,162,39,1),0 0 90px rgba(201,162,39,.7),0 20px 60px rgba(0,0,0,.6);}
+}
+
+/* Zona de balotas */
+.bombo-balotas-wrap{position:absolute;inset:10px;border-radius:50%;overflow:hidden;z-index:2;}
+
+/* ── Balotas 2.5D con banderas ── */
+.balota{
+  position:absolute;border-radius:50%;overflow:hidden;
+  border:2px solid rgba(255,255,255,.35);
+  box-shadow:0 4px 12px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.4);
+  cursor:default;user-select:none;z-index:3;
+  animation:balotaFlota var(--dur,2s) ease-in-out var(--del,0s) infinite alternate;
+}
+/* Bandera ocupa 100% de la balota con object-fit:cover */
+.balota img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;display:block;border-radius:50%;
+}
+/* Brillo interno sobre la bandera */
+.balota::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.3) 0%,transparent 60%);
+  pointer-events:none;z-index:4;
+}
+@keyframes balotaFlota{
+  from{transform:translate(var(--fx0,0px),var(--fy0,0px)) scale(1);}
+  to{transform:translate(var(--fx1,6px),var(--fy1,8px)) scale(1.04);}
+}
+.balota.mezclando{
+  animation:balotaMezcla var(--md,.38s) ease-in-out var(--del,0s) infinite alternate;
+}
+@keyframes balotaMezcla{
+  0%{transform:translate(var(--mx0,0px),var(--my0,0px)) rotate(0deg) scale(1);}
+  30%{transform:translate(var(--mx1,20px),var(--my1,-18px)) rotate(15deg) scale(1.08);}
+  60%{transform:translate(calc(var(--mx0,0px) * -1.2),var(--my1,18px)) rotate(-10deg) scale(.94);}
+  100%{transform:translate(var(--mx1,20px),calc(var(--my0,0px)*1.3)) rotate(8deg) scale(1.05);}
+}
+.balota.extrayendo{
+  animation:balotaExtrae .7s cubic-bezier(.22,1,.36,1) forwards !important;
+  z-index:20;
+  border-color:rgba(201,162,39,.9);
+  box-shadow:0 0 0 3px rgba(201,162,39,.6),0 8px 30px rgba(0,0,0,.7);
+}
+@keyframes balotaExtrae{
+  0%{transform:scale(1);opacity:1;}
+  35%{transform:scale(2.4);opacity:1;}
+  65%{transform:scale(3.8);opacity:.9;}
+  100%{transform:scale(5.8) translateY(-15px);opacity:0;}
+}
+
+/* ── Resultado central (bandera + nombre) ── */
+.resultado-wrap{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(.1);
+  z-index:30;display:flex;flex-direction:column;align-items:center;gap:7px;
+  pointer-events:none;opacity:0;transition:none;
+}
+.resultado-wrap.entrando{animation:resultadoEntrar .55s cubic-bezier(.22,1,.36,1) forwards;}
+.resultado-wrap.saliendo{animation:resultadoSalir .3s ease-in forwards;}
+@keyframes resultadoEntrar{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.15);}
+  60%{opacity:1;transform:translate(-50%,-50%) scale(1.06);}
+  100%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+}
+@keyframes resultadoSalir{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(.7);}
+}
+.resultado-flag{
+  width:120px;height:80px;border-radius:10px;overflow:hidden;
+  border:2px solid rgba(201,162,39,.7);
+  box-shadow:0 0 0 4px rgba(201,162,39,.2),0 0 30px rgba(201,162,39,.4),0 8px 24px rgba(0,0,0,.7);
+}
+.resultado-flag img{width:100%;height:100%;object-fit:cover;display:block;}
+.resultado-nombre{
+  font-family:'Syne',sans-serif;font-size:clamp(14px,2vw,20px);font-weight:900;
+  color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8);letter-spacing:.02em;
+  white-space:nowrap;text-align:center;
+}
+.resultado-rol{
+  font-size:9px;font-weight:700;letter-spacing:.2em;color:#c9a227;
+  text-transform:uppercase;margin-top:-4px;
+}
+.bombo-escenario.revelando .bombo-cristal{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.25),
+    0 0 0 3px rgba(201,162,39,.9),
+    0 0 80px rgba(201,162,39,.7),
+    0 0 120px rgba(201,162,39,.3),
+    0 20px 60px rgba(0,0,0,.6);
+}
+
+/* Partido estelar */
+.partido-estelar{margin:14px 0 8px;background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.22);border-radius:18px;padding:16px 12px;animation:apIn .5s ease;display:none;}
+.partido-estelar.visible{display:block;}
+.pe-header{font-size:9px;font-weight:700;letter-spacing:.15em;color:#c9a227;text-transform:uppercase;margin-bottom:10px;text-align:center;}
+.pe-vs{display:flex;align-items:center;gap:8px;justify-content:center;}
+.pe-eq{flex:1;text-align:center;max-width:120px;}
+.pe-flag{width:64px;height:43px;border-radius:6px;overflow:hidden;margin:0 auto 6px;border:1.5px solid rgba(255,255,255,.2);box-shadow:0 3px 12px rgba(0,0,0,.5);}
+.pe-flag img{width:100%;height:100%;object-fit:cover;display:block;}
+.pe-pais{font-size:clamp(12px,1.5vw,16px);font-weight:900;line-height:1.1;color:#fff;}
+.pe-grupo{font-size:9px;color:rgba(255,255,255,.35);margin-top:2px;}
+.pe-vs-lbl{font-family:'Syne',sans-serif;font-size:20px;font-weight:900;color:rgba(255,255,255,.15);flex-shrink:0;}
+.pe-fase{font-size:9px;color:rgba(255,255,255,.25);text-align:center;margin-top:6px;}
+
+.r-coment{font-size:11px;font-style:italic;color:rgba(255,255,255,.45);min-height:22px;line-height:1.5;margin:6px 0 14px;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .3s;}
+.r-coment.ia{color:#c9a227;}
+
+#btn-accion{width:100%;padding:14px 18px;border-radius:14px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:13px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;transition:all .22s;position:relative;overflow:hidden;}
+#btn-accion::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.16),transparent);opacity:0;transition:opacity .2s;}
+#btn-accion:hover::before{opacity:1;}
+#btn-accion:hover{transform:translateY(-1px);filter:brightness(1.09);}
+#btn-accion:active{transform:scale(.98);}
+#btn-accion:disabled{opacity:.3;cursor:not-allowed;transform:none;filter:none;}
+#btn-accion.fase-sortear{background:linear-gradient(135deg,#c9a227,#e8c53a,#b8911f);color:#020408;box-shadow:0 5px 24px rgba(201,162,39,.4);}
+#btn-accion.fase-revelar{background:linear-gradient(135deg,#0047AB,#1a6cd6);color:#fff;box-shadow:0 5px 24px rgba(0,71,171,.4);}
+#btn-accion.fase-siguiente{background:linear-gradient(135deg,#1a7a4a,#22a060);color:#fff;box-shadow:0 5px 24px rgba(26,122,74,.4);}
+#btn-sort-all{width:100%;margin-top:7px;padding:9px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:rgba(255,255,255,.4);font-family:'Syne',sans-serif;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;}
+#btn-sort-all:hover{background:rgba(255,255,255,.09);color:#fff;}
+#btn-sort-all:disabled{opacity:.2;cursor:not-allowed;}
+
+/* Lista fixture */
+.fix-list{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:16px;max-height:min(72vh,640px);overflow-y:auto;position:sticky;top:20px;}
+.fix-list::-webkit-scrollbar{width:4px;}
+.fix-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px;}
+.fix-list-header{font-size:9px;font-weight:700;letter-spacing:.15em;color:rgba(255,255,255,.28);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.fix-list-header::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.05);}
+.fix-sep{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#c9a227;display:flex;align-items:center;gap:8px;margin:12px 0 7px;}
+.fix-sep::before,.fix-sep::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
+.fix-sep:first-child{margin-top:0;}
+.fix-row{display:grid;grid-template-columns:1fr 28px 1fr;align-items:center;gap:5px;padding:7px 8px;border-radius:10px;margin-bottom:3px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);transition:background .15s;}
+.fix-row.new{animation:slideInTop .35s cubic-bezier(.22,1,.36,1);}
+@keyframes slideInTop{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
+.fix-row.inaug{border-color:rgba(201,162,39,.4);background:rgba(201,162,39,.07);}
+.fix-row:hover{background:rgba(255,255,255,.06);}
+.fq{display:flex;flex-direction:column;gap:2px;}
+.fq.r{align-items:flex-end;text-align:right;}
+.ff{width:26px;height:17px;border-radius:3px;overflow:hidden;display:flex;align-items:center;}
+.ff img{width:26px;height:17px;object-fit:cover;display:block;}
+.fp{font-size:11px;font-weight:700;line-height:1.1;}
+.fg{font-size:8px;color:rgba(255,255,255,.28);}
+.fvs{font-size:10px;font-weight:900;color:rgba(255,255,255,.16);text-align:center;}
+.inaug-tag{grid-column:1/-1;font-size:8px;font-weight:700;color:#c9a227;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding-top:2px;}
+.fix-ph{text-align:center;padding:36px 16px;color:rgba(255,255,255,.2);font-size:12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* === ACTO 5 - PREMIOS === */
+.pr-wrap{width:100%;max-width:min(1400px,95vw);}
+.pr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
+.pr-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:22px 16px;text-align:center;position:relative;overflow:hidden;animation:apIn .45s ease both;transition:all .2s;}
+.pr-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--pc,#c9a227);opacity:.7;}
+.pr-card:hover{transform:translateY(-4px);background:rgba(255,255,255,.07);}
+.pr-ico{font-size:30px;margin-bottom:10px;display:block;}
+.pr-tit{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.3;}
+.pr-dsc{font-size:10px;color:rgba(255,255,255,.4);line-height:1.5;margin-bottom:8px;}
+.pr-mnt{display:inline-block;font-size:11px;font-weight:700;color:#c9a227;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.2);border-radius:8px;padding:3px 10px;}
+.actv-panel{background:rgba(201,162,39,.08);border:1px solid rgba(201,162,39,.25);border-radius:20px;padding:24px;text-align:center;margin-top:24px;}
+.actv-t{font-family:'Syne',sans-serif;font-size:16px;font-weight:900;color:#c9a227;margin-bottom:6px;}
+.actv-s{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:18px;line-height:1.6;}
+
+/* config fecha panel */
+#ap-pf{position:fixed;bottom:68px;right:16px;background:#0a0e1a;border:1px solid rgba(201,162,39,.3);border-radius:18px;padding:20px;width:276px;z-index:200;display:none;box-shadow:0 20px 60px rgba(0,0,0,.8);animation:apIn .2s ease;}
+#ap-pf.vis{display:block;}
+.cf-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);display:block;margin-bottom:4px;}
+.cf-in{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 11px;color:#fff;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;color-scheme:dark;margin-bottom:10px;}
+.cf-in:focus{border-color:rgba(201,162,39,.5);}
+#ap-confetti{position:fixed;inset:0;pointer-events:none;z-index:9999;}
+</style>
+
+<div class="ap-bg"></div>
+<div class="ap-grid"></div>
+<canvas id="ap-confetti"></canvas>
+<canvas id="ap-particles"></canvas>
+<div id="preview-badge">&#x1F440; MODO PREVIEW &mdash; Sin escritura en BD</div>
+
+<!-- ===== ACTO 1 ===== -->
+<div class="ap-pan activa" id="pan-1">
+  <div class="intro-flag">&#x1F1E8;&#x1F1F4;</div>
+  <div class="ap-pill">&#x1F30D; I.E. GABO &middot; Cartago &middot; 2026</div>
+  <h1 class="ap-h1">&#x26BD; MUNDIAL<br><span class="gold">GABO 2026</span></h1>
+  <p class="ap-sub">Juegos Interclases &mdash; Jornada Tarde &mdash; Grados 3&deg; al 7&deg;</p>
+  <div style="display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin:30px 0 32px;">
+    <div style="text-align:center"><div style="font-size:32px;font-weight:900;color:#c9a227" id="s-eq">&#x2014;</div><div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Equipos</div></div>
+    <div style="text-align:center"><div style="font-size:32px;font-weight:900;color:#c9a227" id="s-jug">&#x2014;</div><div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Jugadores</div></div>
+    <div style="text-align:center"><div style="font-size:32px;font-weight:900;color:#c9a227">18</div><div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Pa&iacute;ses</div></div>
+    <div style="text-align:center"><div style="font-size:32px;font-weight:900;color:#c9a227">2</div><div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Deportes</div></div>
+  </div>
+  <button class="btn-ap" id="btn-inicio" onclick="window.iniciarCeremonia()">&#x1F3C1; INICIAR CEREMONIA</button>
+  <div id="wrap-prev" style="display:none;margin-top:18px;">
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.4);">
+      <input type="checkbox" id="chk-prev" style="width:16px;height:16px;cursor:pointer" onchange="window.togglePreview(this.checked)">
+      Modo Preview (sorteo sin guardar en BD)
+    </label>
+  </div>
+  <div id="wrap-cfg" style="display:none;margin-top:10px;">
+    <button class="btn-ap sec" style="font-size:11px;padding:8px 18px" onclick="window.togglePF()">&#x1F4C5; Configurar fecha</button>
+  </div>
+</div>
+
+<!-- countdown overlay -->
+<div id="ap-cd-wrap">
+  <div class="cd-flash" id="cd-fl"></div>
+  <div id="cd-n" class="cd-n">10</div>
+  <div class="cd-lbl">Comenzando en...</div>
+</div>
+
+<!-- ===== ACTO 2 ===== -->
+<div class="ap-pan" id="pan-2">
+  <div class="ap-pill">&#x1F30D; Acto II &mdash; Pa&iacute;ses Participantes</div>
+  <h1 class="ap-h1" style="font-size:clamp(28px,6vw,58px);margin-bottom:8px">Pa&iacute;ses del <span class="gold">Mundo</span></h1>
+  <p class="ap-sub" style="margin-bottom:20px">Los pa&iacute;ses que representar&aacute;n a cada sal&oacute;n</p>
+  <div class="ptabs" id="ptabs"></div>
+  <div class="pgrid" id="pgrid"></div>
+</div>
+
+<!-- ===== ACTO 3 ===== -->
+<div class="ap-pan" id="pan-3">
+  <div class="ap-pill">&#x1F3BD; Acto III &mdash; Desfile de Delegaciones</div>
+  <h1 class="ap-h1" style="font-size:clamp(24px,5vw,48px);margin-bottom:24px">Desfile de <span class="gold">Delegaciones</span></h1>
+  <div class="del-escena" id="del-esc"><div style="text-align:center;padding:40px;color:rgba(255,255,255,.4)">&#x23F3; Cargando delegaciones...</div></div>
+  <div style="display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap;justify-content:center;">
+    <button class="btn-ap" id="btn-next-del" onclick="window.sigDelegacion()" disabled>&#x23ED; SIGUIENTE DELEGACI&Oacute;N</button>
+    <span id="del-cnt" style="font-size:12px;color:rgba(255,255,255,.3)"></span>
+  </div>
+</div>
+
+<!-- ===== ACTO 4 ===== -->
+<div class="ap-pan" id="pan-4">
+  <div class="ap-pill">&#x1F3B2; Acto IV &mdash; Sorteo Oficial</div>
+  <div class="sorteo-wrap">
+
+    <!-- COLUMNA IZQUIERDA: Bombo + controles -->
+    <div class="bombo-panel">
+      <div class="r-titulo">&#x26A1; Sorteo Oficial del Torneo</div>
+      <div class="r-sub" id="r-cat-act">Cargando equipos...</div>
+      <div class="r-cats" id="r-cats"></div>
+
+      <!-- ESCENARIO: Cristal glassmorphism + balotas 2.5D -->
+      <div class="bombo-escenario" id="bombo-escenario">
+        <!-- Contenedor de cristal -->
+        <div class="bombo-cristal" id="bombo-cristal">
+          <!-- Balotas generadas dinámicamente por JS -->
+          <div class="bombo-balotas-wrap" id="bombo-balotas"></div>
+        </div>
+        <!-- Resultado: bandera revelada (encima del cristal) -->
+        <div class="resultado-wrap" id="resultado-wrap">
+          <div class="resultado-flag" id="resultado-flag"></div>
+          <div class="resultado-nombre" id="resultado-nombre"></div>
+          <div class="resultado-rol" id="resultado-rol"></div>
+        </div>
+      </div>
+
+      <!-- Partido estelar (primer sorteo) -->
+      <div class="partido-estelar" id="partido-estelar">
+        <div class="pe-header" id="pe-header">&#x26BD; Primer Partido</div>
+        <div class="pe-vs" id="pe-vs"></div>
+        <div class="pe-fase" id="pe-fase"></div>
+      </div>
+
+      <!-- Comentario IA -->
+      <div class="r-coment" id="r-coment"></div>
+
+      <!-- Botón de acción único (cambia de texto y color por fase) -->
+      <button id="btn-accion" class="fase-sortear" onclick="window.SM.accionPrincipal()" disabled>
+        &#x1F3B2; SORTEAR
+      </button>
+      <button id="btn-sort-all" onclick="window.SM.sortearTodo()" disabled>
+        &#x23E9; Sortear Todo (auto)
+      </button>
+    </div>
+
+    <!-- COLUMNA DERECHA: Lista de partidos -->
+    <div class="fix-list" id="fix-list">
+      <div class="fix-list-header">Fixture del Torneo</div>
+      <div class="fix-ph" id="fix-ph">Los partidos aparecer&aacute;n aqu&iacute; conforme se sortean</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== ACTO 5 ===== -->
+<div class="ap-pan" id="pan-5">
+  <div class="ap-pill">&#x1F3C6; Acto V &mdash; Cuadro de Honor</div>
+  <h1 class="ap-h1" style="font-size:clamp(28px,6vw,58px);margin-bottom:8px">Premios <span class="gold">en Juego</span></h1>
+  <p class="ap-sub" style="margin-bottom:26px">Lo que se juega en cada partido &mdash; &iexcl;a dar todo en la cancha!</p>
+  <div class="pr-wrap">
+    <div class="pr-grid" id="pr-grid"></div>
+    <div class="actv-panel" id="actv-p" style="display:none">
+      <div class="actv-t">&#x1F680; Activar Plataforma Completa</div>
+      <div class="actv-s">Sincroniza pa&iacute;ses &middot; genera fixture &middot; recalcula tablas &middot; resumen IA<br><span id="prev-warn" style="color:rgba(255,150,0,.8);font-size:11px"></span></div>
+      <button class="btn-ap" id="btn-actv" onclick="window.activarTodo()">&#x26A1; Activar Todo el Torneo</button>
+      <div id="actv-res"></div>
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <div style="font-family:'Syne',sans-serif;font-size:clamp(18px,4vw,30px);font-weight:900;color:#c9a227;margin-bottom:5px">&#x1F3C6; &iexcl;Que comiencen los juegos!</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.3)">I.E. GABO &middot; Cartago, Valle del Cauca &middot; 2026</div>
+    </div>
+  </div>
+</div>
+
+<!-- config fecha -->
+<div id="ap-pf">
+  <div style="font-size:13px;font-weight:700;color:#c9a227;margin-bottom:4px">&#x1F4C5; Fecha de inicio</div>
+  <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:14px">Usada para programar el fixture</div>
+  <label class="cf-lbl">Fecha</label><input type="date" id="cf-fecha" class="cf-in">
+  <label class="cf-lbl">Hora</label><input type="time" id="cf-hora" class="cf-in" value="13:00">
+  <div style="display:flex;gap:8px">
+    <button onclick="window.guardarFecha()" style="flex:1;padding:9px;background:#c9a227;border:none;border-radius:8px;color:#020408;font-size:12px;font-weight:700;cursor:pointer">Guardar</button>
+    <button onclick="window.togglePF()" style="padding:9px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:rgba(255,255,255,.6);font-size:12px;cursor:pointer">X</button>
+  </div>
+  <div id="cf-fb" style="font-size:11px;color:#4ade80;margin-top:8px;min-height:14px"></div>
+</div>
+
+<!-- barra control -->
+<div class="ap-ctrl">
+  <div class="ap-ctrl-info">
+    <div class="ap-ctrl-titulo" id="ct-tit">Ceremonia de Apertura</div>
+    <div class="ap-ctrl-hint" id="ct-hin">Bienvenidos al Mundial GABO 2026</div>
+  </div>
+  <div class="ap-ctrl-btns">
+    <button class="btn-c" id="ct-cfg" style="display:none" onclick="window.togglePF()">&#x1F4C5;</button>
+    <button class="btn-c" id="ct-ant" onclick="window.pantAnterior()" disabled>&larr;</button>
+    <span class="ctrl-n" id="ct-num">1 / 5</span>
+    <button class="btn-c g" id="ct-sig" onclick="window.panSiguiente()">Siguiente &rarr;</button>
+    <!-- Pantalla completa -->
+    <button id="btn-fs" onclick="window.toggleFS()" title="Pantalla completa">&#x26F6;</button>
+  </div>
+</div>
+
+<script>
+// ── flagImg(codigo) — FlagCDN v2 (reemplaza getBanderaEmoji/flag) ──
+function flagImg(cod,sz){
+  if(!cod||!String(cod).trim()) return '<span style="opacity:.3">&#x1F3F3;</span>';
+  var c=String(cod).toLowerCase().trim();
+  return '<img src="https://flagcdn.com/w40/'+c+'.png" alt="'+c.toUpperCase()+'" style="width:'+(sz?sz+'px':'1.6em')+';height:auto;vertical-align:middle;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.3);" onerror="this.style.display=\'none\'">';
+}
+// Alias de compatibilidad hacia atras
+if(typeof getBanderaEmoji==='undefined') var getBanderaEmoji=flagImg;
+
+(function(){
+"use strict";
+var ACT=1,TOTAL=5,PREVIEW=false,ES_ADMIN=false;
+var _deleg=[],_dIdx=0,_fraseC={};
+// Orden del SORTEO = Orden CRONOLÓGICO DE JUEGO
+// El primer partido a jugarse (7°Futsal) se sortea primero y queda arriba.
+// La lista fix-list se construye con appendChild (↓), así queda:
+//   Arriba: 7°Futsal (partido inaugural) → ... → Abajo: 3°Mini Voleibol
+var _sortOrd=[
+  {g:"7",d:"Futsal",      lbl:"7\xB0 Futsal \u2014 PARTIDO INAUGURAL"},
+  {g:"7",d:"Voleibol",    lbl:"7\xB0 Voleibol"},
+  {g:"6",d:"Futsal",      lbl:"6\xB0 Futsal"},
+  {g:"6",d:"Voleibol",    lbl:"6\xB0 Voleibol"},
+  {g:"5",d:"Mini Futsal", lbl:"5\xB0 Mini Futsal"},
+  {g:"5",d:"Mini Voleibol",lbl:"5\xB0 Mini Voleibol"},
+  {g:"4",d:"Mini Futsal", lbl:"4\xB0 Mini Futsal"},
+  {g:"4",d:"Mini Voleibol",lbl:"4\xB0 Mini Voleibol"},
+  {g:"3",d:"Mini Futsal", lbl:"3\xB0 Mini Futsal"},
+  {g:"3",d:"Mini Voleibol",lbl:"3\xB0 Mini Voleibol"}
+];
+var _sIdx=0,_sRunning=false,_sPartidos=[],_eqMap={},_fechaI="";
+var GP={"3":["301","302","303","304"],"4":["401","402","403","404"],"5":["501","502","503","504"],"6":["601","602","603"],"7":["702","703","704"]};
+var PA={
+  "301":{p:"Francia",b:"FR",c:["#002395","#FFFFFF","#ED2939"]},
+  "302":{p:"Hait\xED",b:"HT",c:["#00209F","#D21034"]},
+  "303":{p:"Uruguay",b:"UY",c:["#FFFFFF","#75AADB","#FFFFFF"]},
+  "304":{p:"El Salvador",b:"SV",c:["#0F47AF","#FFFFFF","#0F47AF"]},
+  "401":{p:"Espa\xF1a",b:"ES",c:["#AA151B","#F1BF00","#AA151B"]},
+  "402":{p:"Paraguay",b:"PY",c:["#D52B1E","#FFFFFF","#009B3A"]},
+  "403":{p:"Canad\xE1",b:"CA",c:["#FF0000","#FFFFFF","#FF0000"]},
+  "404":{p:"Colombia",b:"CO",c:["#FCD116","#003893","#CE1126"]},
+  "501":{p:"Ecuador",b:"EC",c:["#FFD100","#003893","#CE1126"]},
+  "502":{p:"Portugal",b:"PT",c:["#006600","#FF0000","#006600"]},
+  "503":{p:"Alemania",b:"DE",c:["#000000","#DD0000","#FFCE00"]},
+  "504":{p:"M\xE9xico",b:"MX",c:["#006847","#FFFFFF","#CE1126"]},
+  "601":{p:"Argentina",b:"AR",c:["#74ACDF","#FFFFFF","#74ACDF"]},
+  "602":{p:"Brasil",b:"BR",c:["#009C3B","#FFDF00","#009C3B"]},
+  "603":{p:"EEUU",b:"US",c:["#B22234","#FFFFFF","#3C3B6E"]},
+  "702":{p:"Rumania",b:"RO",c:["#002B7F","#FCD116","#CE1126"]},
+  "703":{p:"Venezuela",b:"VE",c:["#CF142B","#003893","#CF142B"]},
+  "704":{p:"Per\xFA",b:"PE",c:["#D91023","#FFFFFF","#D91023"]}
+};
+var NOMS=["Introducci\xF3n","Pa\xEDses del Mundo","Desfile de Delegaciones","Sorteo & Fixture","Cuadro de Honor"];
+var HNTS=["Bienvenidos al Mundial GABO 2026","Los pa\xEDses que representan cada sal\xF3n","Los equipos que competir\xE1n este a\xF1o","El sorteo oficial del torneo","Los premios en juego"];
+
+// Particles
+(function(){
+  var cv=document.getElementById("ap-particles"),ctx=cv.getContext("2d"),pts=[];
+  function rs(){cv.width=window.innerWidth;cv.height=window.innerHeight;}
+  rs();window.addEventListener("resize",rs);
+  for(var i=0;i<55;i++)pts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:.5+Math.random()*1.5,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,a:.1+Math.random()*.35});
+  (function d(){ctx.clearRect(0,0,cv.width,cv.height);pts.forEach(function(p){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>cv.width)p.vx*=-1;if(p.y<0||p.y>cv.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,"+p.a+")";ctx.fill();});requestAnimationFrame(d);})();
+})();
+
+// Confetti
+var _conf=[],_confOn=false;
+function confetti(){
+  var cv=document.getElementById("ap-confetti"),ctx=cv.getContext("2d");
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  for(var i=0;i<180;i++)_conf.push({x:Math.random()*cv.width,y:-10,w:6+Math.random()*8,h:4+Math.random()*5,color:["#c9a227","#0047AB","#1a7a4a","#fff","#c0392b","#e8f0fb"][Math.floor(Math.random()*6)],vx:(Math.random()-.5)*8,vy:3+Math.random()*7,rot:Math.random()*360,rs:(Math.random()-.5)*10});
+  if(_confOn)return;_confOn=true;
+  (function a(){ctx.clearRect(0,0,cv.width,cv.height);var v=[];_conf.forEach(function(p){p.x+=p.vx;p.y+=p.vy;p.rot+=p.rs;p.vy+=.14;if(p.y<cv.height+60)v.push(p);ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});_conf=v;if(_conf.length>0)requestAnimationFrame(a);else{_confOn=false;ctx.clearRect(0,0,cv.width,cv.height);}})();
+}
+
+/* flag() removed -> use flagImg */
+/* flagCss() removed - use flagImg */
+function p2(n){return n<10?"0"+n:String(n);}
+function today(){var h=new Date();return h.getFullYear()+"-"+p2(h.getMonth()+1)+"-"+p2(h.getDate());}
+
+// Nav
+function ir(n){
+  if(n<1||n>TOTAL)return;
+  document.getElementById("pan-"+ACT).classList.remove("activa");
+  ACT=n;
+  document.getElementById("pan-"+n).classList.add("activa");
+  document.getElementById("ct-tit").textContent=NOMS[n-1];
+  document.getElementById("ct-hin").textContent=HNTS[n-1];
+  document.getElementById("ct-num").textContent=n+" / "+TOTAL;
+  document.getElementById("ct-ant").disabled=(n===1);
+  var s=document.getElementById("ct-sig");
+  s.textContent=n===TOTAL?"\uD83C\uDFC1 Fin":"Siguiente \u2192";
+  s.className="btn-c"+(n===TOTAL?"":" g");
+  if(n===2)a2();if(n===3)a3();if(n===4)a4();if(n===5)a5();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+window.panSiguiente=function(){if(ACT<TOTAL)ir(ACT+1);else{confetti();setTimeout(function(){if(window.cargarModulo)window.cargarModulo("landing");},1800);}};
+window.pantAnterior=function(){if(ACT>1)ir(ACT-1);};
+document.addEventListener("keydown",function(e){if(e.key==="ArrowRight"||e.key===" "){if(ACT<TOTAL)ir(ACT+1);}if(e.key==="ArrowLeft"){if(ACT>1)ir(ACT-1);}});
+
+// Init
+var _delegFetched=false; // true cuando el prefetch ya llegó (ok o fallback)
+
+function init(){
+  ES_ADMIN=!!(window.getEsAdmin&&window.getEsAdmin());
+  if(ES_ADMIN){
+    document.getElementById("wrap-prev").style.display="block";
+    document.getElementById("wrap-cfg").style.display="block";
+    document.getElementById("ct-cfg").style.display="flex";
+    document.getElementById("actv-p").style.display="block";
+  }
+  try{var sf=sessionStorage.getItem("ap_f");if(sf){_fechaI=sf;var el=document.getElementById("cf-fecha");if(el)el.value=sf;}var sp=sessionStorage.getItem("ap_pv");if(sp==="1"){PREVIEW=true;_setPv(true);document.getElementById("chk-prev").checked=true;}}catch(e){}
+  if(typeof google!=="undefined"&&google.script){
+    // Stats Acto 1
+    google.script.run.withSuccessHandler(function(r){if(r&&r.ok){document.getElementById("s-eq").textContent=r.datos.total_equipos||"0";document.getElementById("s-jug").textContent=r.datos.total_jugadores||"0";}}).withFailureHandler(function(){}).getEstadisticasTorneo();
+    // Fecha
+    google.script.run.withSuccessHandler(function(r){if(r&&r.ok&&r.datos){_fechaI=r.datos.split("T")[0]||"";var el=document.getElementById("cf-fecha");if(el&&_fechaI)el.value=_fechaI;}}).withFailureHandler(function(){}).getConfigPublico("fecha_inicio_torneo");
+    // ── PRE-FETCH silencioso delegaciones (Acto 3) ──
+    google.script.run
+      .withSuccessHandler(function(r){
+        _deleg=(r&&r.ok&&r.datos&&r.datos.length>0)?r.datos:_delFb();
+        _delegFetched=true;
+        if(ACT===3){ _dIdx=0; _rdel(0); }
+      })
+      .withFailureHandler(function(){
+        _deleg=_delFb();
+        _delegFetched=true;
+        if(ACT===3){ _dIdx=0; _rdel(0); }
+      })
+      .getDelegacionesCompletas();
+  } else {
+    _deleg=_delFb();
+    _delegFetched=true;
+  }
+
+  // ── FULLSCREEN API ──
+  function _updateFSBtn(){
+    var btn=document.getElementById("btn-fs");
+    if(!btn) return;
+    var isFS=!!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement);
+    btn.innerHTML=isFS ? "\u26F6 Salir" : "\u26F6 Pantalla Completa";
+    btn.classList.toggle("activo", isFS);
+    // Ocultar la barra de navegación del Shell en fullscreen
+    var nav=document.getElementById("nav-principal");
+    if(nav) nav.style.display=isFS?"none":"";
+  }
+  document.addEventListener("fullscreenchange",_updateFSBtn);
+  document.addEventListener("webkitfullscreenchange",_updateFSBtn);
+  document.addEventListener("mozfullscreenchange",_updateFSBtn);
+
+  window.toggleFS=function(){
+    var isFS=!!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement);
+    if(isFS){
+      (document.exitFullscreen||document.webkitExitFullscreen||document.mozCancelFullScreen).call(document);
+    } else {
+      var el=document.documentElement;
+      var req=el.requestFullscreen||el.webkitRequestFullscreen||el.mozRequestFullScreen;
+      if(req) req.call(el).catch(function(){});
+    }
+  };
+
+  // Atajo teclado F para fullscreen
+  document.addEventListener("keydown",function(e){
+    if(e.key==="f"||e.key==="F"){
+      // Solo si no hay foco en input
+      if(document.activeElement&&document.activeElement.tagName==="INPUT") return;
+      window.toggleFS();
+    }
+  });
+}
+
+function _setPv(on){PREVIEW=on;document.getElementById("preview-badge").classList.toggle("vis",on);var w=document.getElementById("prev-warn");if(w)w.textContent=on?"\u26A0\uFE0F PREVIEW activo \u2014 el fixture NO se guardar\xE1 en BD":"";try{sessionStorage.setItem("ap_pv",on?"1":"0");}catch(e){}}
+window.togglePreview=function(on){_setPv(on);};
+
+// Acto 1 countdown
+window.iniciarCeremonia=function(){
+  document.getElementById("btn-inicio").disabled=true;
+  var wrap=document.getElementById("ap-cd-wrap"),el=document.getElementById("cd-n"),fl=document.getElementById("cd-fl");
+  wrap.classList.add("on");el.textContent="10";
+  var n=10;
+  var iv=setInterval(function(){
+    fl.classList.add("on");setTimeout(function(){fl.classList.remove("on");},80);
+    n--;el.textContent=n;
+    el.style.animation="none";el.offsetHeight;el.style.animation="cdPulse .85s ease";
+    if(n<=0){clearInterval(iv);setTimeout(function(){wrap.classList.remove("on");ir(2);},800);}
+  },1000);
+};
+
+// Acto 2
+var _a2done=false,_gpaises="3";
+function a2(){
+  if(_a2done)return;_a2done=true;
+  _buildPaises();
+  if(typeof google!=="undefined"&&google.script){
+    google.script.run.withSuccessHandler(function(r){
+      if(r&&r.ok&&r.datos){for(var g in r.datos){var d=r.datos[g];if(PA[g]){PA[g].p=d.pais||PA[g].p;PA[g].b=d.bandera||PA[g].b;PA[g].cap=d.capitan||"";}}}
+      _buildPaises();
+    }).withFailureHandler(function(){}).getMapaPaisesAsignados();
+  }
+}
+function _buildPaises(){
+  var gs=["3","4","5","6","7"],ls={"3":"3\xB0","4":"4\xB0","5":"5\xB0","6":"6\xB0","7":"7\xB0"};
+  document.getElementById("ptabs").innerHTML=gs.map(function(g){return'<button class="ptab'+(g===_gpaises?" on":"")+'" onclick="window.camGP(\''+g+'\')">'+ls[g]+'</button>';}).join("");
+  var grupos=GP[_gpaises]||[],html="";
+  grupos.forEach(function(g,i){
+    var p=PA[g]||{p:"Por asignar",b:"",c:[]};
+    var em="";try{em=flagImg(p.b);}catch(e){}
+    var fh=em?'<div class="p-flag-wrap">'+em+'</div>':'<div style="margin-bottom:10px">'+flagCss(g)+'</div>';
+    html+='<div class="pcard" style="animation-delay:'+(i*.08).toFixed(2)+'s">'+fh+'<div class="p-nombre">'+p.p+'</div><div class="p-grupo">Grupo '+g+'</div><div class="p-nivel">'+(parseInt(g.charAt(0))<=5?"Primaria":"Bachillerato")+'</div>'+(p.cap?'<div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:4px">Cap: '+p.cap+'</div>':'')+'</div>';
+  });
+  document.getElementById("pgrid").innerHTML=html;
+}
+window.camGP=function(g){_gpaises=g;_buildPaises();};
+
+// Acto 3
+var _a3done=false;
+function a3(){
+  if(_a3done) return; // Ya renderizado, no hacer nada
+  _a3done=true;
+
+  if(_delegFetched){
+    // Datos ya disponibles (pre-fetch llegó antes) → render inmediato, sin "Cargando"
+    _dIdx=0;
+    _rdel(0);
+  } else {
+    // Pre-fetch aún en vuelo → mostrar spinner ligero y esperar
+    var esc=document.getElementById("del-esc");
+    esc.innerHTML=
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px;">'+
+        '<div style="width:36px;height:36px;border-radius:50%;border:3px solid rgba(201,162,39,.3);'+
+             'border-top-color:#c9a227;animation:spin 1s linear infinite;"></div>'+
+        '<div style="font-size:13px;color:rgba(255,255,255,.4)">Preparando delegaciones...</div>'+
+      '</div>';
+    // El callback del prefetch en init() llamará _rdel(0) cuando llegue
+  }
+}
+function _delFb(){
+  return["301","302","303","304","401","402","403","404","501","502","503","504","601","602","603","702","703","704"].map(function(g){var p=PA[g]||{p:"Por asignar",b:""};var gr=g.charAt(0);return{grupo:g,grado:gr,nivel:parseInt(gr)<=5?"Primaria":"Bachillerato",pais:p.p,bandera:p.b,fs:{nombre_equipo:"",capitan:"",jugadores:[]},vb:{nombre_equipo:"",capitan:"",jugadores:[]}};});
+}
+function _rdel(idx){
+  var d=_deleg[idx];if(!d)return;
+  var esc=document.getElementById("del-esc"),bs=document.getElementById("btn-next-del"),ct=document.getElementById("del-cnt");
+
+  // ── Bandera principal: tamaño grande para proyector ──
+  var bandCod=d.bandera||d.bandera_codigo||d.b||"";
+  if(!bandCod&&PA[d.grupo]) bandCod=PA[d.grupo].b||"";
+  // Nota: CSS controla el tamaño final vía .del-flag-big img { width: clamp(...) }
+  var fh='<div class="del-flag-big">'+flagImg(bandCod,"120")+'</div>';
+
+  // ── Tarjeta de equipo ──
+  function eqCard(eq,sp,ico){
+    var jugs=(eq&&eq.jugadores||[]).slice(0,8);
+    var ch=jugs.map(function(j){return'<div class="jug-chip">'+(j.nombre||j.nombre_completo||"")+'</div>';}).join("");
+    var eqBand=eq&&(eq.bandera_codigo||eq.bandera||bandCod)||bandCod;
+    return'<div class="del-eq">'+
+      '<div class="del-eq-sp">'+
+        '<span>'+ico+'</span><span>'+sp+'</span>'+
+        (eqBand?'<span>'+flagImg(eqBand,"20")+'</span>':'')+
+      '</div>'+
+      '<div class="del-eq-nom">'+(eq&&eq.nombre_equipo||"Equipo en formaci\xF3n")+'</div>'+
+      '<div class="del-eq-cap">\u2B50&nbsp;'+(eq&&eq.capitan||"Capit\xE1n por definir")+'</div>'+
+      (ch?'<div class="del-eq-jugs">'+ch+'</div>':'')+
+    '</div>';
+  }
+
+  esc.innerHTML=
+    '<div class="del-hdr">'+fh+
+      '<div>'+
+        '<div class="del-pill">\uD83D\uDCCD '+d.nivel+' &nbsp;\xB7&nbsp; Grado '+d.grado+'\xB0</div>'+
+        '<div class="del-pais">'+(d.pais||"Pa\xEDs")+'</div>'+
+        '<div class="del-g">Grupo '+d.grupo+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="del-frase ldg" id="df-'+idx+'">\uD83E\uDD16 Generando frase...</div>'+
+    '<div class="del-eqs">'+eqCard(d.fs,"Mini Futsal / Futsal","\u26BD")+eqCard(d.vb,"Mini Voleibol / Voleibol","\uD83C\uDFC0")+'</div>'+
+    '<div class="del-prog">'+
+      '<span class="del-ptxt">'+(d.pais||"")+'</span>'+
+      '<div class="del-pbar"><div class="del-pfill" style="width:'+Math.round((idx+1)/_deleg.length*100)+'%"></div></div>'+
+      '<span class="del-ptxt">'+(idx+1)+' / '+_deleg.length+'</span>'+
+    '</div>';
+
+  bs.disabled=false;
+  bs.textContent=(idx>=_deleg.length-1)?"\u2705 FIN DEL DESFILE":"\u23ED SIGUIENTE DELEGACI\xF3N";
+  if(ct) ct.textContent=(idx+1)+" de "+_deleg.length;
+
+  // Frase IA
+  var fe=document.getElementById("df-"+idx);
+  if(_fraseC[d.grupo]){
+    if(fe){ fe.innerHTML='\u201C'+_fraseC[d.grupo]+'\u201D'; fe.classList.remove("ldg"); }
+  } else if(typeof google!=="undefined"&&google.script){
+    google.script.run
+      .withSuccessHandler(function(r){
+        var f=(r&&r.ok&&r.datos&&r.datos.frase)?r.datos.frase:"\xA1Bienvenida esta gran delegaci\xF3n al Mundial GABO 2026!";
+        _fraseC[d.grupo]=f;
+        var el=document.getElementById("df-"+idx);
+        if(el){ el.innerHTML='\u201C'+f+'\u201D'; el.classList.remove("ldg"); }
+      })
+      .withFailureHandler(function(){
+        var el=document.getElementById("df-"+idx);
+        if(el){ el.innerHTML='\u201C\xA1Con orgullo y garra, bienvenidos al Mundial GABO 2026!\u201D'; el.classList.remove("ldg"); }
+      })
+      .generarFraseDelegacionIA(d.grupo,d.pais||"el mundo",d.grado);
+  } else {
+    if(fe){ fe.innerHTML='\u201C\xA1Bienvenida esta gran delegaci\xF3n al Mundial GABO 2026!\u201D'; fe.classList.remove("ldg"); }
+  }
+}
+window.sigDelegacion=function(){if(_dIdx<_deleg.length-1){_dIdx++;_rdel(_dIdx);}};
+
+// ═══════════════════════════════════════════════════════════════
+//  ACTO 4 — SorteadorMundialista v3
+//  Máquina de estados de 2 pasos por categoría
+//
+//  Estados:
+//    "idle"        → listo para Paso 1 (botón dorado SORTEAR)
+//    "animando"    → bolillero en marcha — TODOS los botones bloqueados
+//    "paso2"       → 1er partido mostrado, esperando revelar el resto
+//    "siguienteCat"→ categoría terminada, esperando avanzar
+//    "terminado"   → todos los cruces sorteados
+//
+//  Regla de Oro DOM: ORDEN CRONOLÓGICO ESTRICTO
+//    El primer partido sorteado queda arriba.
+//    Todo se agrega con appendChild (↓), nunca con prepend.
+// ═══════════════════════════════════════════════════════════════
+
+function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+
+class SorteadorMundialista {
+
+  constructor(){
+    this.estado    = "idle";
+    this.catIdx    = 0;
+    this.catActual = null;
+    this.partidos  = [];   // todos los partidos de la categoría actual
+    this.primer    = null; // primer partido (ya animado en Paso 1)
+    this.resto     = [];   // partidos pendientes para el Paso 2
+    this.modoAuto  = false;
+    this._bloqueado= false; // guarda re-entradas durante animaciones
+  }
+
+  // ══════════════════════════════
+  //  PUNTO DE ENTRADA — 1 botón
+  // ══════════════════════════════
+  async accionPrincipal(){
+    if(this._bloqueado) return;
+    if(this.estado === "idle")        { await this._paso1(); return; }
+    if(this.estado === "paso2")       { await this._paso2(); return; }
+    if(this.estado === "siguienteCat"){ await this._prepararSiguiente(); return; }
+  }
+
+  // ── Sortear Todo: auto-avanza categoría a categoría ──
+  async sortearTodo(){
+    if(this._bloqueado) return;
+    if(this.estado === "terminado") return;
+    this.modoAuto = true;
+    this._setBtnAll(true); // deshabilitar "Sortear Todo" durante el loop
+
+    while(this.catIdx < _sortOrd.length && this.modoAuto){
+      // Asegurarse que estamos en idle antes de cada categoría
+      if(this.estado !== "idle") break;
+      await this._paso1();
+      if(!this.modoAuto) break;
+      await sleep(600);
+      if(this.estado === "paso2"){
+        await this._paso2();
+        await sleep(400);
+      }
+      if(this.estado === "siguienteCat"){
+        await this._prepararSiguiente();
+        await sleep(500);
+      }
+    }
+    this.modoAuto = false;
+  }
+
+  // ══════════════════════════════════════════════
+  //  PASO 1: Animación + primer partido
+  // ══════════════════════════════════════════════
+  async _paso1(){
+    if(this.catIdx >= _sortOrd.length){
+      this._setLabel("\u2705 \xA1Sorteo Completado!");
+      this._setEstado("terminado");
+      confetti();
+      return;
+    }
+
+    var cat = _sortOrd[this.catIdx];
+    this.catActual = cat;
+    this._bloquear();
+    this._setLabel("\uD83C\uDFB2 " + cat.lbl);
+
+    // Obtener equipos — fallback a datos estáticos si BD vacía
+    var key = cat.g + "_" + cat.d;
+    var eqs = (_eqMap[key] || []).slice();
+    if(eqs.length < 2){
+      eqs = (GP[cat.g] || []).map(function(gr){
+        var p = PA[gr] || {p:"Pa\xEDs", b:""};
+        return {grupo:gr, grado:cat.g, deporte:cat.d, pais:p.p, bandera_codigo:p.b};
+      });
+    }
+
+    this.partidos = _genPts(eqs, cat.g, cat.d);
+    this.primer   = this.partidos[0];
+    this.resto    = this.partidos.slice(1);
+
+    // Llenar bombo + animación
+    this._llenarBalotas(eqs);
+    await sleep(300);
+    await this._animarExtraccion(this.primer.l, "Local");
+    await sleep(450);
+    await this._animarExtraccion(this.primer.v, "Visitante");
+    await sleep(400);
+
+    // Tarjeta partido estelar
+    this._mostrarPartidoEstelar(this.primer, cat);
+
+    // Comentario IA
+    var desc = (this.primer.l.pais||this.primer.l.grupo) + " vs " + (this.primer.v.pais||this.primer.v.grupo);
+    await this._pedirComentarioIA(cat.g, cat.d, desc);
+
+    // Agregar primer partido a la lista — orden cronológico (append ↓)
+    var esInaugural = this._esInaugural(0);
+    _addRowNew(this.primer, cat, esInaugural);
+
+    if(this.resto.length === 0){
+      // Solo había 1 partido en la categoría → ir directo a finalizar
+      await this._finalizarCategoria();
+    } else {
+      this._desbloquear();
+      this._setEstado("paso2");
+      this._setBtnAccion("fase-revelar",
+        "\uD83D\uDCCB REVELAR RESTO (" + this.resto.length +
+        " partido" + (this.resto.length !== 1 ? "s" : "") + " m\xE1s)");
+    }
+  }
+
+  // ══════════════════════════════════════════════
+  //  PASO 2: Revelar todos los partidos restantes
+  //  sin animación de bolillero — instantáneo
+  // ══════════════════════════════════════════════
+  async _paso2(){
+    this._bloquear();
+    var cat = this.catActual;
+    var self = this;
+    this.resto.forEach(function(pt, i){
+      var esI = self._esInaugural(i + 1); // i+1 porque el índice 0 ya fue en Paso 1
+      _addRowNew(pt, cat, esI);
+    });
+    await this._finalizarCategoria();
+  }
+
+  // ── ¿Es el partido inaugural? (último partido Futsal 7°) ──
+  _esInaugural(idxEnCat){
+    var cat = this.catActual;
+    if(!cat) return false;
+    // 7°Futsal es ahora la primera categoría en sortearse.
+    // Su primer partido (idx 0) es el PARTIDO INAUGURAL (se juega primero).
+    return (cat.g === "7" && cat.d === "Futsal" && idxEnCat === 0);
+  }
+
+  // ── Terminar categoría ──
+  async _finalizarCategoria(){
+    // Guardar fixture en backend
+    await _execFixAsync(this.catActual);
+
+    // Marcar chip ✓
+    var chip = document.getElementById("sc-" + this.catIdx);
+    if(chip){ chip.classList.remove("act"); chip.classList.add("dn"); }
+
+    this.catIdx++;
+
+    if(this.catIdx < _sortOrd.length){
+      // Hay más categorías
+      var next = document.getElementById("sc-" + this.catIdx);
+      if(next) next.classList.add("act");
+      this._setLabel(_sortOrd[this.catIdx].lbl);
+
+      // Limpiar bombo y tarjeta estelar para la siguiente categoría
+      this._limpiarBalotas();
+      var pe = document.getElementById("partido-estelar");
+      if(pe) pe.classList.remove("visible");
+      document.getElementById("r-coment").innerHTML = "";
+
+      this._desbloquear();
+      this._setEstado("siguienteCat");
+      this._setBtnAccion("fase-siguiente", "\u27A1 SIGUIENTE CATEGOR\xCDA");
+
+    } else {
+      // Todo sorteado
+      this._desbloquear();
+      this._setEstado("terminado");
+      this._setLabel("\u2705 \xA1Sorteo Completado!");
+      document.getElementById("btn-sort-all").disabled = true;
+      confetti();
+    }
+  }
+
+  // ── Preparar la siguiente categoría ──
+  async _prepararSiguiente(){
+    // Restablecer estado a idle y ejecutar Paso 1 de la nueva categoría
+    this._setEstado("idle");
+    if(!this.modoAuto){
+      this._setBtnAccion("fase-sortear", "\uD83C\uDFB2 SORTEAR");
+    }
+    // Si no es modo auto, ejecutar directamente el Paso 1
+    if(!this.modoAuto){
+      await this._paso1();
+    }
+    // En modoAuto el bucle de sortearTodo() lo maneja
+  }
+
+  // ══════════════════════════════════════════════
+  //  BOMBO GLASSMORPHISM — animaciones
+  // ══════════════════════════════════════════════
+  _llenarBalotas(eqs){
+    var wrap = document.getElementById("bombo-balotas");
+    if(!wrap) return;
+    wrap.innerHTML = "";
+
+    // El círculo del cristal tiene 260px de diámetro (280 inset 10px c/lado)
+    var cx0 = 130, cy0 = 130, maxR = 94;
+    var minSz = 44, maxSz = 54;
+
+    eqs.forEach(function(eq, i){
+      var cod   = (eq.bandera_codigo || eq.bandera || "").toLowerCase();
+      var total = eqs.length;
+
+      // Espiral para evitar solapamiento
+      var angle = (i / total) * Math.PI * 2 + (i % 2 ? -0.5 : 0.5);
+      var ring  = (i < Math.ceil(total / 2)) ? 0.42 : 0.76;
+      var dist  = ring * maxR + (Math.random() - 0.5) * 12;
+      var sz    = minSz + Math.random() * (maxSz - minSz);
+
+      var bx = cx0 + Math.cos(angle) * dist - sz / 2;
+      var by = cy0 + Math.sin(angle) * dist - sz / 2;
+
+      // Variables CSS para animaciones
+      var fx0 = (Math.random() - 0.5) * 10, fy0 = (Math.random() - 0.5) * 10;
+      var fx1 = (Math.random() - 0.5) * 15, fy1 = (Math.random() - 0.5) * 15;
+      var mx0 = (Math.random() - 0.5) * 24, my0 = (Math.random() - 0.5) * 24;
+      var mx1 = (Math.random() - 0.5) * 32, my1 = (Math.random() - 0.5) * 32;
+      var dur = (1.5 + Math.random() * 1.8).toFixed(2);
+      var del = (Math.random() * 1.4).toFixed(2);
+      var md  = (0.26 + Math.random() * 0.22).toFixed(2);
+
+      var b = document.createElement("div");
+      b.className = "balota";
+      b.id = "balota-" + i;
+      b.dataset.cod = cod;
+      b.style.cssText =
+        "left:"   + bx.toFixed(1) + "px;" +
+        "top:"    + by.toFixed(1) + "px;" +
+        "width:"  + sz.toFixed(1) + "px;" +
+        "height:" + sz.toFixed(1) + "px;" +
+        "--fx0:"  + fx0.toFixed(1) + "px;--fy0:" + fy0.toFixed(1) + "px;" +
+        "--fx1:"  + fx1.toFixed(1) + "px;--fy1:" + fy1.toFixed(1) + "px;" +
+        "--mx0:"  + mx0.toFixed(1) + "px;--my0:" + my0.toFixed(1) + "px;" +
+        "--mx1:"  + mx1.toFixed(1) + "px;--my1:" + my1.toFixed(1) + "px;" +
+        "--dur:"  + dur + "s;--del:" + del + "s;--md:" + md + "s;";
+
+      // <img> con object-fit:cover ocupa TODO el círculo — nunca textContent
+      if(cod){
+        b.innerHTML =
+          '<img src="https://flagcdn.com/w40/' + cod + '.png"' +
+          ' alt="' + cod.toUpperCase() + '"' +
+          ' loading="eager"' +
+          ' onerror="this.parentElement.style.background=\'rgba(40,40,80,.8)\'">';
+      } else {
+        b.style.background = "rgba(40,40,80,.8)";
+      }
+      wrap.appendChild(b);
+    });
+  }
+
+  _limpiarBalotas(){
+    var wrap = document.getElementById("bombo-balotas");
+    if(wrap) wrap.innerHTML = "";
+    this._ocultarResultado();
+  }
+
+  _ocultarResultado(){
+    var rw = document.getElementById("resultado-wrap");
+    if(!rw) return;
+    rw.classList.remove("entrando");
+    rw.classList.add("saliendo");
+    setTimeout(function(){ rw.classList.remove("saliendo"); rw.style.opacity = "0"; }, 320);
+  }
+
+  // ── Coreografía: mezcla → extrae balota → revela bandera grande ──
+  async _animarExtraccion(equipo, rol){
+    var cristal = document.getElementById("bombo-cristal");
+    var escena  = document.getElementById("bombo-escenario");
+    var rWrap   = document.getElementById("resultado-wrap");
+    var rFlag   = document.getElementById("resultado-flag");
+    var rNombre = document.getElementById("resultado-nombre");
+    var rRol    = document.getElementById("resultado-rol");
+    if(!cristal || !escena || !rWrap) return;
+
+    // Ocultar resultado anterior
+    rWrap.classList.remove("entrando", "saliendo");
+    rWrap.style.opacity = "0";
+
+    // 1. MEZCLA — activar caos en balotas y glow en cristal
+    cristal.classList.add("mezclando");
+    var balotas = Array.from(cristal.querySelectorAll(".balota"));
+    balotas.forEach(function(b){ b.classList.remove("mezclando"); void b.offsetWidth; b.classList.add("mezclando"); });
+    await sleep(880);
+
+    // 2. EXTRACCIÓN — sacar una balota aleatoria
+    var disponibles = Array.from(cristal.querySelectorAll(".balota:not(.extrayendo)"));
+    if(disponibles.length){
+      var pick = disponibles[Math.floor(Math.random() * disponibles.length)];
+      pick.classList.remove("mezclando");
+      pick.classList.add("extrayendo");
+      await sleep(480);
+      pick.remove();
+    }
+
+    // Detener mezcla en las restantes
+    cristal.classList.remove("mezclando");
+    cristal.querySelectorAll(".balota").forEach(function(b){ b.classList.remove("mezclando"); });
+
+    // 3. REVELACIÓN — bandera grande en el centro
+    var cod = (equipo.bandera_codigo || equipo.bandera || "").toLowerCase();
+    if(cod){
+      rFlag.innerHTML =
+        '<img src="https://flagcdn.com/w160/' + cod + '.png"' +
+        ' alt="' + cod.toUpperCase() + '"' +
+        ' loading="eager"' +
+        ' onerror="this.parentElement.style.background=\'rgba(40,40,80,.9)\'">';
+    } else {
+      rFlag.innerHTML = '<div style="width:120px;height:80px;background:rgba(40,40,80,.9);border-radius:8px;"></div>';
+    }
+    rNombre.textContent = equipo.pais || equipo.grupo || "";
+    rRol.textContent    = rol;
+
+    escena.classList.add("revelando");
+    rWrap.style.opacity = "0";
+    void rWrap.offsetWidth; // reflow para reiniciar animación
+    rWrap.classList.remove("saliendo", "entrando");
+    void rWrap.offsetWidth;
+    rWrap.classList.add("entrando");
+
+    await sleep(980);  // pausa para que el público lea el equipo
+
+    escena.classList.remove("revelando");
+    this._ocultarResultado();
+    await sleep(300);
+  }
+
+  // ── Tarjeta partido estelar (VS grande) ──
+  _mostrarPartidoEstelar(pt, cat){
+    var pe = document.getElementById("partido-estelar");
+    if(!pe) return;
+
+    var sport = (cat.d === "Futsal" || cat.d === "Mini Futsal") ? "Futsal" : "Voleibol";
+    document.getElementById("pe-header").textContent =
+      "\u26BD " + sport + " \xB7 Grado " + cat.g + "\xB0";
+
+    var codL = (pt.l.bandera_codigo || "").toLowerCase();
+    var codV = (pt.v.bandera_codigo || "").toLowerCase();
+    document.getElementById("pe-vs").innerHTML =
+      '<div class="pe-eq">'+
+        '<div class="pe-flag"><img src="https://flagcdn.com/w80/' + codL + '.png" alt="' + codL.toUpperCase() + '"></div>'+
+        '<div class="pe-pais">' + (pt.l.pais||pt.l.grupo) + '</div>'+
+        '<div class="pe-grupo">Grupo ' + pt.l.grupo + '</div>'+
+      '</div>'+
+      '<div class="pe-vs-lbl">VS</div>'+
+      '<div class="pe-eq">'+
+        '<div class="pe-flag"><img src="https://flagcdn.com/w80/' + codV + '.png" alt="' + codV.toUpperCase() + '"></div>'+
+        '<div class="pe-pais">' + (pt.v.pais||pt.v.grupo) + '</div>'+
+        '<div class="pe-grupo">Grupo ' + pt.v.grupo + '</div>'+
+      '</div>';
+
+    document.getElementById("pe-fase").textContent = pt.f || "";
+    pe.classList.add("visible");
+  }
+
+  // ── Comentario IA con timeout de seguridad ──
+  async _pedirComentarioIA(grado, deporte, desc){
+    var rc = document.getElementById("r-coment");
+    if(!rc) return;
+    rc.innerHTML = "\u23F3 Comentario IA..."; rc.classList.remove("ia");
+
+    var comentario = await new Promise(function(resolve){
+      if(typeof google === "undefined" || !google.script){
+        var fb = [
+          "\xA1Duelo \xE9pico que promete emocionar!",
+          "\xA1Dos titanes se enfrentan en la cancha!",
+          "\xA1El estadio retumba de emoci\xF3n!"
+        ];
+        return resolve(fb[Math.floor(Math.random() * fb.length)]);
+      }
+      var timer = setTimeout(function(){
+        resolve("\xA1Duelo \xE9pico en las canchas del GABO!");
+      }, 5000);
+      google.script.run
+        .withSuccessHandler(function(r){
+          clearTimeout(timer);
+          resolve((r&&r.ok&&r.datos&&r.datos.comentario) ? r.datos.comentario : "\xA1Duelo \xE9pico!");
+        })
+        .withFailureHandler(function(){ clearTimeout(timer); resolve("\xA1Duelo \xE9pico!"); })
+        .generarComentarioSorteoIA(grado, deporte, desc);
+    });
+
+    rc.innerHTML  = "\u201C" + comentario + "\u201D";
+    rc.classList.add("ia");
+  }
+
+  // ══════════════════════════════════════
+  //  UI HELPERS
+  // ══════════════════════════════════════
+  _bloquear(){ this._bloqueado = true; this._setEstado("animando"); }
+  _desbloquear(){ this._bloqueado = false; }
+
+  _setEstado(e){
+    this.estado = e;
+    var btnA   = document.getElementById("btn-accion");
+    var btnAll = document.getElementById("btn-sort-all");
+    var bloq   = (e === "animando");
+    if(btnA)   btnA.disabled   = bloq || e === "terminado";
+    if(btnAll) btnAll.disabled = bloq || e === "terminado";
+    if(e === "idle"){
+      this._setBtnAccion("fase-sortear", "\uD83C\uDFB2 SORTEAR");
+    }
+  }
+
+  _setBtnAccion(clase, texto){
+    var b = document.getElementById("btn-accion");
+    if(!b) return;
+    b.className  = clase;
+    b.innerHTML  = texto;
+    b.disabled   = false;
+  }
+
+  _setBtnAll(disabled){
+    var b = document.getElementById("btn-sort-all");
+    if(b) b.disabled = disabled;
+  }
+
+  _setLabel(txt){
+    var el = document.getElementById("r-cat-act");
+    if(el) el.textContent = txt;
+  }
+}
+
+// ── Instancia global ──
+var SM = new SorteadorMundialista();
+window.SM = SM;
+
+// ── Compatibilidad onclick legacy ──
+window.sortearSig       = function(){ SM.accionPrincipal(); };
+window.siguientePartido = function(){ SM.accionPrincipal(); };
+
+// ── Helpers: generar partidos y añadir a la lista ──
+function _genPts(eqs,g,d){
+  var nivel=parseInt(g)<=5?"P":"B",pts=[];
+  if(nivel==="P"&&eqs.length===4){
+    pts.push({l:eqs[0],v:eqs[1],f:"Semifinal A",g:g,d:d});
+    pts.push({l:eqs[2],v:eqs[3],f:"Semifinal B",g:g,d:d});
+  } else if(nivel==="B"&&eqs.length===3){
+    pts.push({l:eqs[0],v:eqs[1],f:"J1",g:g,d:d});
+    pts.push({l:eqs[0],v:eqs[2],f:"J2",g:g,d:d});
+    pts.push({l:eqs[1],v:eqs[2],f:"J3",g:g,d:d});
+  } else {
+    for(var i=0;i<eqs.length-1;i++)
+      for(var j=i+1;j<eqs.length;j++)
+        pts.push({l:eqs[i],v:eqs[j],f:"P"+(pts.length+1),g:g,d:d});
+  }
+  return pts;
+}
+
+function _addRowNew(pt, cat, isI){
+  var lista = document.getElementById("fix-list");
+
+  // Eliminar placeholder la primera vez
+  var ph = document.getElementById("fix-ph");
+  if(ph) ph.remove();
+
+  // ── Separador de categoría ──
+  // Cada categoría muestra su header UNA sola vez.
+  // Se inserta ANTES de los partidos de esa categoría.
+  // Como el orden es cronológico (append), el separador va al final de la lista
+  // si es la primera vez que aparece esta categoría.
+  var catId = "fc-" + cat.g + "-" + cat.d.replace(/\s/g, "-");
+  if(!document.getElementById(catId)){
+    var sep = document.createElement("div");
+    sep.id = catId;
+    sep.className = "fix-sep";
+    sep.textContent = "Grado " + cat.g + "\xB0 \xB7 " + cat.d;
+    lista.appendChild(sep); // ← append: categoría nueva va al fondo
+  }
+
+  // ── Fila del partido ──
+  var codL = (pt.l.bandera_codigo || "").toLowerCase();
+  var codV = (pt.v.bandera_codigo || "").toLowerCase();
+  var row  = document.createElement("div");
+  row.className = "fix-row new" + (isI ? " inaug" : "");
+  row.innerHTML =
+    '<div class="fq">'+
+      '<div class="ff"><img src="https://flagcdn.com/w40/'+codL+'.png" alt="'+codL.toUpperCase()+'"></div>'+
+      '<div class="fp">'+(pt.l.pais||pt.l.grupo)+'</div>'+
+      '<div class="fg">Grupo '+pt.l.grupo+'</div>'+
+    '</div>'+
+    '<div class="fvs">VS</div>'+
+    '<div class="fq r">'+
+      '<div class="ff"><img src="https://flagcdn.com/w40/'+codV+'.png" alt="'+codV.toUpperCase()+'"></div>'+
+      '<div class="fp">'+(pt.v.pais||pt.v.grupo)+'</div>'+
+      '<div class="fg">Grupo '+pt.v.grupo+'</div>'+
+    '</div>'+
+    (isI ? '<div class="inaug-tag">\u2B50 PARTIDO INAUGURAL \u2014 Se juega hoy</div>' : '');
+
+  lista.appendChild(row); // ← append: orden cronológico estricto ↓
+  // Scroll al fondo para ver el partido recién añadido
+  lista.scrollTop = lista.scrollHeight;
+}
+
+function _execFixAsync(cat){
+  return new Promise(function(resolve){
+    if(PREVIEW){ console.log("[PREVIEW] Fixture no guardado:", cat.lbl); return resolve(); }
+    if(typeof google==="undefined"||!google.script) return resolve();
+    var pin = window.getAdminPIN ? window.getAdminPIN() : "";
+    if(!pin) return resolve();
+    var f = _fechaI || today();
+    google.script.run
+      .withSuccessHandler(function(){ resolve(); })
+      .withFailureHandler(function(){ resolve(); })
+      .generarFixture(cat.g, cat.d, f, "13:00", pin);
+  });
+}
+
+// ── Acto 4: inicialización ──
+var _a4done = false;
+function a4(){
+  if(_a4done) return; _a4done = true;
+  document.getElementById("r-cats").innerHTML = _sortOrd.map(function(s,i){
+    return '<span class="rcat'+(i===0?" act":"")+'" id="sc-'+i+'">'+s.lbl+'</span>';
+  }).join("");
+  document.getElementById("r-cat-act").textContent = "Cargando equipos...";
+  if(typeof google!=="undefined"&&google.script){
+    google.script.run
+      .withSuccessHandler(function(r){
+        if(r&&r.ok&&r.datos) _bldEqMap(r.datos); else _bldEqFb();
+        _enableSort();
+      })
+      .withFailureHandler(function(){ _bldEqFb(); _enableSort(); })
+      .getEquipos();
+  } else { _bldEqFb(); _enableSort(); }
+}
+function _bldEqMap(eqs){
+  _eqMap={};
+  eqs.forEach(function(e){
+    var k=String(e.grado||"")+"_"+String(e.deporte||"");
+    if(!_eqMap[k])_eqMap[k]=[];_eqMap[k].push(e);
+  });
+}
+function _bldEqFb(){
+  _eqMap={};
+  [{g:"3",d:"Mini Futsal"},{g:"3",d:"Mini Voleibol"},{g:"4",d:"Mini Futsal"},{g:"4",d:"Mini Voleibol"},
+   {g:"5",d:"Mini Futsal"},{g:"5",d:"Mini Voleibol"},{g:"6",d:"Futsal"},{g:"6",d:"Voleibol"},
+   {g:"7",d:"Futsal"},{g:"7",d:"Voleibol"}].forEach(function(c){
+    var k=c.g+"_"+c.d;
+    _eqMap[k]=(GP[c.g]||[]).map(function(gr){
+      var p=PA[gr]||{p:"Pa\xEDs",b:""};
+      return {grupo:gr,grado:c.g,deporte:c.d,pais:p.p,bandera_codigo:p.b};
+    });
+  });
+}
+function _enableSort(){
+  SM._setEstado("idle");
+  document.getElementById("btn-sort-all").disabled = false;
+  SM._setLabel(_sortOrd[0]?_sortOrd[0].lbl:"Listo");
+}
+
+
+
+// Acto 5
+var _a5done=false,PR=[
+  // ── FINALES ESPECIALES PRIMARIA (4° vs 5°) ──
+  {ico:"\u26A1",t:"Campe\xF3n Final Especial \u2014 Mini Futsal",d:"Camp. 4\xB0 vs Camp. 5\xB0 \xB7 Grado 4 refuerzo m\xE1x 2",m:"Trofeo + Medallas + Cine",c:"#0047AB",delay:.00},
+  {ico:"\uD83E\uDD48",t:"Subcampe\xF3n Final Especial \u2014 Mini Futsal",d:"Camp. 4\xB0 vs Camp. 5\xB0",m:"Medallas + Hamburguesa + Papas + Jugo",c:"#0047AB",delay:.05},
+  {ico:"\u26A1",t:"Campe\xF3n Final Especial \u2014 Mini Voleibol",d:"Camp. 4\xB0 vs Camp. 5\xB0 \xB7 Grado 4 refuerzo m\xE1x 2",m:"Trofeo + Medallas + Cine",c:"#0060d4",delay:.10},
+  {ico:"\uD83E\uDD48",t:"Subcampe\xF3n Final Especial \u2014 Mini Voleibol",d:"Camp. 4\xB0 vs Camp. 5\xB0",m:"Medallas + Hamburguesa + Papas + Jugo",c:"#0060d4",delay:.15},
+  // ── GRAN FINAL BACHILLERATO (6° vs 7°) ──
+  {ico:"\uD83D\uDD25",t:"Campe\xF3n Gran Final Bachillerato \u2014 Futsal",d:"Camp. 6\xB0 vs Camp. 7\xB0 \xB7 Grado 6 refuerzo 1 jug.",m:"Trofeo + Medallas + Cine",c:"#C0392B",delay:.20},
+  {ico:"\uD83E\uDD48",t:"Subcampe\xF3n Gran Final Bachillerato \u2014 Futsal",d:"Camp. 6\xB0 vs Camp. 7\xB0",m:"Medallas + Hamburguesa + Papas + Jugo",c:"#C0392B",delay:.25},
+  {ico:"\uD83D\uDD25",t:"Campe\xF3n Gran Final Bachillerato \u2014 Voleibol",d:"Camp. 6\xB0 vs Camp. 7\xB0 \xB7 Sin refuerzos",m:"Trofeo + Medallas + Cine",c:"#e74c3c",delay:.30},
+  {ico:"\uD83E\uDD48",t:"Subcampe\xF3n Gran Final Bachillerato \u2014 Voleibol",d:"Camp. 6\xB0 vs Camp. 7\xB0",m:"Medallas + Hamburguesa + Papas + Jugo",c:"#e74c3c",delay:.35},
+  // ── GRADO 3° FINAL INDEPENDIENTE ──
+  {ico:"\uD83E\uDD47",t:"Campe\xF3n Mini Futsal 3\xB0",d:"Grado 3\xB0 \xB7 Final independiente",m:"Trofeo + Medallas + Cine",c:"#c9a227",delay:.40},
+  {ico:"\uD83E\uDD48",t:"Subcampe\xF3n Mini Futsal 3\xB0",d:"Grado 3\xB0 \xB7 Final independiente",m:"Medallas + Hamburguesa + Papas + Jugo",c:"#c9a227",delay:.45},
+  {ico:"\uD83E\uDD47",t:"Campe\xF3n Mini Voleibol 3\xB0",d:"Grado 3\xB0 \xB7 Final independiente",m:"Trofeo + Medallas + Cine",c:"#b8911f",delay:.50},
+  {ico:"\uD83E\uDD48",t:"Subcampe\xF3n Mini Voleibol 3\xB0",d:"Grado 3\xB0 \xB7 Final independiente",m:"Medallas + Hamburguesa + Papas + Jugo",c:"#b8911f",delay:.55},
+  // ── 3er PUESTO — FUTSAL (Juego Limpio por categoría) ──
+  // Futsal 3°: también partido, pero el criterio de desempate es Juego Limpio
+  {ico:"\uD83E\uDD1D",t:"3er Puesto Futsal 3\xB0 \u2014 Juego Limpio",d:"Partido de 3\xB0 puesto \xB7 Desempate: menor tarjetas/puntos negativos",m:"Bono $100.000",c:"#1a7a4a",delay:.60},
+  {ico:"\uD83E\uDD1D",t:"3er Puesto Futsal 4\xB0\u20115\xB0 \u2014 Juego Limpio",d:"Sin partido \xB7 Menor puntos negativos por tarjetas (excl. finalistas)",m:"Bono $100.000",c:"#1a7a4a",delay:.65},
+  {ico:"\uD83E\uDD1D",t:"3er Puesto Futsal 6\xB0\u20117\xB0 \u2014 Juego Limpio",d:"Sin partido \xB7 Menor puntos negativos por tarjetas (excl. finalistas)",m:"Bono $100.000",c:"#1a7a4a",delay:.70},
+  // ── 3er PUESTO — VOLEIBOL (Mayor puntos realizados por categoría) ──
+  {ico:"\uD83C\uDFC5",t:"3er Puesto Voleibol 3\xB0 \u2014 Puntos Realizados",d:"Sin partido \xB7 Mayor cantidad de puntos a favor en el torneo",m:"Bono $100.000",c:"#9333ea",delay:.75},
+  {ico:"\uD83C\uDFC5",t:"3er Puesto Voleibol 4\xB0\u20115\xB0 \u2014 Puntos Realizados",d:"Sin partido \xB7 Mayor cantidad de puntos a favor en el torneo (excl. finalistas)",m:"Bono $100.000",c:"#9333ea",delay:.80},
+  {ico:"\uD83C\uDFC5",t:"3er Puesto Voleibol 6\xB0\u20117\xB0 \u2014 Puntos Realizados",d:"Sin partido \xB7 Mayor cantidad de puntos a favor en el torneo (excl. finalistas)",m:"Bono $100.000",c:"#9333ea",delay:.85},
+  // ── PREMIOS ESPECIALES ──
+  {ico:"\uD83D\uDCE3",t:"Mejor Barra \u2014 1er Puesto",d:"La hinchada m\xE1s animada y creativa del torneo",m:"$250.000",c:"#c9a227",delay:.90},
+  {ico:"\uD83D\uDCE3",t:"Mejor Barra \u2014 2do Puesto",d:"Segunda mejor barra del torneo",m:"$150.000",c:"#b8911f",delay:.94},
+  {ico:"\uD83C\uDFAD",t:"Mejor Presentaci\xF3n",d:"Delegaci\xF3n con la mejor presentaci\xF3n en apertura",m:"$100.000",c:"#ec4899",delay:.98}
+];
+function a5(){
+  if(_a5done)return;_a5done=true;
+  document.getElementById("pr-grid").innerHTML=PR.map(function(p){
+    return'<div class="pr-card" style="--pc:'+p.c+';animation-delay:'+p.delay+'s"><span class="pr-ico">'+p.ico+'</span><div class="pr-tit">'+p.t+'</div><div class="pr-dsc">'+p.d+'</div><span class="pr-mnt">'+p.m+'</span></div>';
+  }).join("");
+  if(ES_ADMIN){document.getElementById("actv-p").style.display="block";var w=document.getElementById("prev-warn");if(w)w.textContent=PREVIEW?"\u26A0\uFE0F PREVIEW activo \u2014 el fixture NO se guardar\xE1 en BD":"";}
+}
+
+window.activarTodo=function(){
+  var pin=window.getAdminPIN?window.getAdminPIN():"";
+  if(!pin){alert("Debes iniciar sesi\xF3n como administrador.");return;}
+  if(PREVIEW){alert("\u26A0\uFE0F MODO PREVIEW activo. Des\xE1ctivalo para guardar en la BD.");return;}
+  var btn=document.getElementById("btn-actv"),res=document.getElementById("actv-res");
+  btn.disabled=true;btn.textContent="\u23F3 Activando...";
+  res.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:10px">Por favor espera (30-60 segundos)...</div>';
+  var f=_fechaI||today();
+  if(typeof google!=="undefined"&&google.script){
+    google.script.run.withSuccessHandler(function(r){
+      btn.disabled=false;btn.textContent="\u26A1 Activar Todo el Torneo";
+      if(r&&r.ok){
+        var h='<div style="background:rgba(26,122,74,.15);border:1px solid rgba(26,122,74,.3);border-radius:12px;padding:14px;margin-top:12px"><div style="color:#4ade80;font-weight:700;margin-bottom:8px">\u2705 Plataforma activada</div>';
+        if(r.datos&&r.datos.pasos)r.datos.pasos.forEach(function(p){h+='<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:3px">\u2714 '+p+'</div>';});
+        if(r.datos&&r.datos.resumen_ia)h+='<div style="margin-top:10px;padding:10px;background:rgba(201,162,39,.1);border-radius:8px;font-size:11px;color:rgba(255,255,255,.7);font-style:italic">'+r.datos.resumen_ia+'</div>';
+        if(r.datos&&r.datos.errores&&r.datos.errores.length)r.datos.errores.forEach(function(e){h+='<div style="font-size:10px;color:rgba(255,180,50,.7)">\u26A0 '+e+'</div>';});
+        h+='</div>';res.innerHTML=h;confetti();
+      } else {res.innerHTML='<div style="color:rgba(255,100,100,.8);font-size:12px;margin-top:8px">Error: '+(r&&r.mensaje?r.mensaje:"desconocido")+'</div>';}
+    }).withFailureHandler(function(){btn.disabled=false;btn.textContent="\u26A1 Reintentar";res.innerHTML='<div style="color:rgba(255,100,100,.8);font-size:12px;margin-top:8px">Error de conexi\xF3n.</div>';}).activarPlataformaCompleta(pin,f,"13:00");
+  }
+};
+
+// Config fecha
+window.togglePF=function(){document.getElementById("ap-pf").classList.toggle("vis");};
+window.guardarFecha=function(){
+  var f=document.getElementById("cf-fecha").value,h=document.getElementById("cf-hora").value||"13:00",fb=document.getElementById("cf-fb");
+  if(!f){fb.textContent="Selecciona una fecha.";fb.style.color="#e05555";return;}
+  _fechaI=f;try{sessionStorage.setItem("ap_f",f);}catch(e){}
+  var iso=f+"T"+h+":00";fb.style.color="#4ade80";fb.textContent="Guardando...";
+  if(typeof google!=="undefined"&&google.script&&window.getAdminPIN){
+    google.script.run.withSuccessHandler(function(r){fb.textContent=r&&r.ok?"\u2705 Guardada.":"\u26A0\uFE0F No guardada en BD.";setTimeout(window.togglePF,1400);}).withFailureHandler(function(){fb.textContent="Sin conexi\xF3n, guardado local.";setTimeout(window.togglePF,1400);}).setConfigAdmin(window.getAdminPIN(),"fecha_inicio_torneo",iso);
+  } else {fb.textContent="\u2705 Guardada localmente.";setTimeout(window.togglePF,1200);}
+};
+
+init();
+})();
+</script>
+</div>

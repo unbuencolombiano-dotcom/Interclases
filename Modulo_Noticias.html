@@ -1,0 +1,1078 @@
+<!-- ============================================================
+     Modulo_Noticias.html — Mural de Noticias + PDF Cartelería
+     Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca
+     Consume: getNoticias(), crearNoticia(), eliminarNoticia(),
+              getTablaGeneral(), getProximosPartidos(),
+              getPartidosFinalizados(), getGoleadores(),
+              getEstadisticasTorneo()
+     Libs: jsPDF + html2canvas (CDN)
+     ─────────────────────────────────────────────────────────
+     MODIFICACIONES v2:
+     • Fase 1: Control de acceso — solo Admin puede publicar/eliminar
+     • Fase 2: Soporte universal de videos (YouTube, Drive, MP4)
+     • Fase 3: Publicación programada (Scheduled Posts)
+     ============================================================ -->
+
+<div id="modulo-noticias">
+
+<style>
+#modulo-noticias {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* ── CABECERA ── */
+.not-header {
+  background: linear-gradient(135deg, #0047AB 0%, #003380 100%);
+  border-radius: 18px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+.not-header h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px; font-weight: 700; color: #fff; margin: 0 0 3px;
+}
+.not-header p { font-size: 12px; color: rgba(255,255,255,.6); margin: 0; }
+.btn-pdf {
+  display: flex; align-items: center; gap: 6px;
+  background: #c9a227; border: none;
+  border-radius: 10px; padding: 10px 18px;
+  color: #0a0e1a; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+}
+.btn-pdf:hover { background: #b8911f; }
+.btn-pdf:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ── TABS ── */
+.not-tabs {
+  display: flex; gap: 6px; margin-bottom: 20px;
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 14px; padding: 6px;
+}
+.not-tab {
+  flex: 1; padding: 10px; border-radius: 10px; border: none;
+  background: transparent; font-size: 13px; font-weight: 600;
+  color: #64748b; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s; text-align: center;
+}
+.not-tab:hover  { background: #f1f5f9; color: #0d1117; }
+.not-tab.activo { background: #0047AB; color: #fff; }
+
+/* ── FILTROS CATEGORIA ── */
+.cat-filtros {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.cat-chip {
+  padding: 5px 13px; border-radius: 20px;
+  border: 1px solid #e2e8f0; background: #fff;
+  font-size: 12px; font-weight: 600; color: #64748b;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+}
+.cat-chip:hover  { border-color: #0047AB; color: #0047AB; }
+.cat-chip.activo { background: #0047AB; border-color: #0047AB; color: #fff; }
+
+/* ── TARJETA NOTICIA ── */
+.not-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  transition: transform .15s, box-shadow .15s;
+}
+.not-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,.07);
+}
+.not-card-body {
+  padding: 16px;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.not-icono {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.not-cat-resultados    { background: #e6f4ed; }
+.not-cat-convocatorias { background: #e8f0fb; }
+.not-cat-logros        { background: #fdf6e3; }
+.not-cat-curiosidades  { background: #fce7f3; }
+.not-cat-general       { background: #f1f5f9; }
+
+.not-cat-badge {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px;
+  padding: 2px 7px; border-radius: 6px; margin-bottom: 5px;
+  display: inline-block;
+}
+.badge-res  { background: #e6f4ed; color: #1a7a4a; }
+.badge-conv { background: #e8f0fb; color: #0047AB; }
+.badge-log  { background: #fdf6e3; color: #92400e; }
+.badge-cur  { background: #fce7f3; color: #9d174d; }
+.badge-gen  { background: #f1f5f9; color: #475569; }
+
+.not-titulo  { font-size: 15px; font-weight: 700; color: #0d1117; line-height: 1.3; margin-bottom: 6px; }
+.not-contenido { font-size: 13px; color: #475569; line-height: 1.6; margin-bottom: 8px; }
+.not-footer {
+  padding: 10px 16px; border-top: 1px solid #f1f5f9;
+  display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+.not-fecha { font-size: 11px; color: #94a3b8; }
+.not-acciones { display: flex; gap: 6px; }
+.btn-not-accion {
+  padding: 5px 11px; border-radius: 7px;
+  border: 1px solid #e2e8f0; background: #fff;
+  font-size: 11px; font-weight: 600; color: #475569;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+}
+.btn-not-accion.wa { border-color: #25D366; color: #25D366; background: #f0fdf4; }
+.btn-not-accion.wa:hover { background: #25D366; color: #fff; }
+.btn-not-accion.del { border-color: #c0392b; color: #c0392b; background: #fee2e2; }
+.btn-not-accion.del:hover { background: #c0392b; color: #fff; }
+
+/* ── FORMULARIO NUEVA NOTICIA ── */
+.form-noticia {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 16px; padding: 22px; margin-bottom: 16px;
+}
+.fn-titulo { font-size: 15px; font-weight: 700; color: #0d1117; margin-bottom: 18px; }
+.fn-label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: #475569; text-transform: uppercase;
+  letter-spacing: .5px; margin-bottom: 6px;
+}
+.fn-input, .fn-select, .fn-textarea {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0d1117; background: #fff; margin-bottom: 14px;
+  box-sizing: border-box; transition: border-color .2s;
+}
+.fn-input:focus, .fn-select:focus, .fn-textarea:focus {
+  outline: none; border-color: #0047AB;
+}
+.fn-textarea { min-height: 100px; resize: vertical; }
+.fn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 560px) { .fn-grid { grid-template-columns: 1fr; } }
+.fn-btns { display: flex; gap: 10px; justify-content: flex-end; align-items: center; }
+.btn-publicar {
+  padding: 10px 24px; border: none; border-radius: 10px;
+  background: #0047AB; color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; transition: all .2s;
+}
+.btn-publicar:hover    { background: #003380; }
+.btn-publicar:disabled { opacity: .6; cursor: not-allowed; }
+.fn-msg { font-size: 12px; font-weight: 600; }
+.fn-msg.ok  { color: #1a7a4a; }
+.fn-msg.err { color: #c0392b; }
+
+/* ── FASE 2: VIDEO EMBED RESPONSIVO (aspect-ratio 16:9) ── */
+.not-video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: #0d1117;
+}
+.not-video-wrap iframe,
+.not-video-wrap video {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  border: none;
+}
+/* Fallback para navegadores sin soporte de aspect-ratio */
+@supports not (aspect-ratio: 16 / 9) {
+  .not-video-wrap {
+    padding-top: 56.25%;
+    height: 0;
+  }
+}
+
+/* ── FASE 3: BADGE PUBLICACIÓN PROGRAMADA ── */
+.badge-programada {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 1.5px dashed #f59e0b;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 8px;
+  opacity: 0.85;
+  display: block;
+}
+.not-card.programada {
+  opacity: 0.72;
+  border-style: dashed;
+  border-color: #f59e0b;
+  border-width: 2px;
+}
+.not-card.programada:hover { opacity: 0.9; }
+
+/* ── CAMPO DATETIME PROGRAMACIÓN ── */
+.fn-datetime {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0d1117; background: #fff; margin-bottom: 6px;
+  box-sizing: border-box; transition: border-color .2s;
+}
+.fn-datetime:focus { outline: none; border-color: #f59e0b; }
+.fn-prog-hint {
+  font-size: 11px; color: #94a3b8; margin-bottom: 14px; margin-top: 0;
+}
+
+/* ── BANNER SOLO LECTURA ── */
+.not-readonly-banner {
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; color: #64748b; font-size: 13px;
+}
+
+/* ── VISTA PREVIA PDF ── */
+.pdf-preview-wrap {
+  background: #f0f4f8; border: 1px solid #e2e8f0;
+  border-radius: 16px; padding: 20px; margin-bottom: 20px;
+}
+.pdf-preview-titulo {
+  font-size: 15px; font-weight: 700; color: #0d1117;
+  margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+}
+.pdf-preview-sub { font-size: 12px; color: #64748b; margin-bottom: 16px; }
+.pdf-config-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr));
+  gap: 12px; margin-bottom: 16px;
+}
+.pdf-config-label {
+  font-size: 11px; font-weight: 600; color: #475569;
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px;
+}
+.pdf-config-input, .pdf-config-select {
+  width: 100%; padding: 8px 12px;
+  border: 1.5px solid #e2e8f0; border-radius: 8px;
+  font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0d1117; background: #fff; box-sizing: border-box;
+}
+.pdf-config-input:focus, .pdf-config-select:focus { outline: none; border-color: #0047AB; }
+.pdf-acciones { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn-preview {
+  padding: 9px 20px; border: 1.5px solid #0047AB;
+  border-radius: 10px; background: #fff; color: #0047AB;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; transition: all .2s;
+}
+.btn-preview:hover { background: #0047AB; color: #fff; }
+.pdf-status { font-size: 12px; color: #64748b; }
+
+/* ── BOLETIN PDF (oculto, se captura con html2canvas) ── */
+#boletin-pdf {
+  position: fixed; left: -9999px; top: 0;
+  width: 794px; background: #fff;
+  font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+}
+.bol-page { width: 794px; min-height: 1123px; padding: 36px 40px; background: #fff; box-sizing: border-box; }
+.bol-header {
+  background: #0047AB; color: #fff; padding: 20px 24px;
+  border-radius: 12px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.bol-h-titulo { font-size: 20px; font-weight: 700; }
+.bol-h-sub    { font-size: 11px; opacity: .75; margin-top: 2px; }
+.bol-h-fecha  { font-size: 12px; opacity: .7; text-align: right; }
+.bol-h-num    { font-size: 28px; font-weight: 900; color: #c9a227; }
+.bol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.bol-seccion { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+.bol-sec-titulo { background: #003380; color: #fff; padding: 8px 14px; font-size: 12px; font-weight: 700; }
+.bol-sec-body { padding: 12px 14px; }
+.bol-tabla { width: 100%; border-collapse: collapse; font-size: 11px; }
+.bol-tabla th { background: #f8fafc; padding: 5px 8px; font-size: 10px; font-weight: 600; color: #94a3b8; text-align: center; border-bottom: 1px solid #e2e8f0; }
+.bol-tabla th:first-child { text-align: left; }
+.bol-tabla td { padding: 6px 8px; text-align: center; border-bottom: 1px solid #f8fafc; font-size: 11px; }
+.bol-tabla td:first-child { text-align: left; }
+.bol-pts { font-weight: 700; color: #0047AB; }
+.bol-partido { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
+.bol-partido:last-child { border-bottom: none; }
+.bol-part-equipos { flex: 1; font-weight: 600; color: #0d1117; }
+.bol-part-score   { font-weight: 700; color: #0047AB; }
+.bol-part-meta    { font-size: 10px; color: #94a3b8; }
+.bol-noticia { padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+.bol-noticia:last-child { border-bottom: none; }
+.bol-not-titulo { font-size: 12px; font-weight: 700; color: #0d1117; }
+.bol-not-cuerpo { font-size: 11px; color: #475569; margin-top: 3px; line-height: 1.4; }
+.bol-gol-fila { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f8fafc; font-size: 11px; }
+.bol-gol-fila:last-child { border-bottom: none; }
+.bol-gol-rank { width: 18px; height: 18px; border-radius: 4px; background: #0047AB; color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.bol-gol-nombre { flex: 1; font-weight: 600; }
+.bol-gol-num    { font-weight: 700; color: #0047AB; }
+.bol-footer { margin-top: 24px; padding-top: 14px; border-top: 2px solid #0047AB; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10px; color: #64748b; }
+.bol-qr { width: 64px; height: 64px; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #94a3b8; text-align: center; padding: 4px; }
+.bol-frase { background: #fdf6e3; border-radius: 8px; padding: 10px 14px; font-size: 12px; font-style: italic; color: #92400e; margin: 12px 0; text-align: center; border-left: 3px solid #c9a227; }
+
+/* ── UTIL ── */
+.cargando { text-align: center; padding: 40px; color: #94a3b8; }
+.cargando-spinner { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #0047AB; border-radius: 50%; animation: girar 1s linear infinite; margin: 0 auto 10px; }
+@keyframes girar { to { transform: rotate(360deg); } }
+.sin-datos { text-align: center; padding: 32px; color: #94a3b8; font-size: 13px; }
+</style>
+
+<!-- ── CABECERA ── -->
+<div class="not-header">
+  <div>
+    <h2>📰 Mural de Noticias</h2>
+    <p>Mundial GABO 2026 · Noticias y boletín para cartelería</p>
+  </div>
+  <button class="btn-pdf" onclick="cambiarTab('pdf')" id="btn-ir-pdf">
+    🖨️ Generar PDF
+  </button>
+</div>
+
+<!-- ── TABS ── -->
+<div class="not-tabs">
+  <button class="not-tab activo" onclick="cambiarTab('noticias')" id="tab-noticias">📰 Noticias</button>
+  <!-- FASE 1: Tab publicar oculto por defecto, solo visible para admin -->
+  <button class="not-tab" onclick="cambiarTab('publicar')" id="tab-publicar" style="display:none">✏️ Publicar</button>
+  <button class="not-tab" onclick="cambiarTab('pdf')"      id="tab-pdf">🖨️ Boletín PDF</button>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 1 — NOTICIAS PUBLICADAS
+     ══════════════════════════════════ -->
+<div id="panel-noticias">
+  <div class="cat-filtros">
+    <button class="cat-chip activo" onclick="filtrarCat('')"              id="cf-todos">Todas</button>
+    <button class="cat-chip"        onclick="filtrarCat('Resultados')"    id="cf-res">🏆 Resultados</button>
+    <button class="cat-chip"        onclick="filtrarCat('Convocatorias')" id="cf-conv">📋 Convocatorias</button>
+    <button class="cat-chip"        onclick="filtrarCat('Logros')"        id="cf-log">🌟 Logros</button>
+    <button class="cat-chip"        onclick="filtrarCat('Curiosidades')"  id="cf-cur">💡 Curiosidades</button>
+    <button class="cat-chip"        onclick="filtrarCat('General')"       id="cf-gen">📰 General</button>
+  </div>
+  <div id="lista-noticias">
+    <div class="cargando"><div class="cargando-spinner"></div>Cargando noticias...</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 2 — PUBLICAR NOTICIA
+     FASE 1: Contenedor oculto por defecto.
+             inicializarPermisos() lo muestra si es admin.
+     ══════════════════════════════════ -->
+<div id="panel-publicar" style="display:none">
+
+  <!-- FASE 1: Formulario oculto por defecto -->
+  <div id="admin-form-container" style="display:none">
+    <div class="form-noticia">
+      <div class="fn-titulo">✏️ Publicar nueva noticia</div>
+
+      <label class="fn-label">Título <span style="color:#c0392b">*</span></label>
+      <input type="text" class="fn-input" id="fn-titulo-inp"
+             placeholder="Ej: Colombia 303 gana la final de Mini Fútsal" maxlength="120">
+
+      <div class="fn-grid">
+        <div>
+          <label class="fn-label">Categoría <span style="color:#c0392b">*</span></label>
+          <select class="fn-select" id="fn-cat">
+            <option value="Resultados">🏆 Resultados</option>
+            <option value="Convocatorias">📋 Convocatorias</option>
+            <option value="Logros">🌟 Logros</option>
+            <option value="Curiosidades">💡 Curiosidades</option>
+            <option value="General">📰 General</option>
+          </select>
+        </div>
+        <div>
+          <label class="fn-label">Destacada</label>
+          <select class="fn-select" id="fn-destacada">
+            <option value="No">No destacada</option>
+            <option value="Si">⭐ Destacada (aparece primero)</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="fn-label">Contenido <span style="color:#c0392b">*</span></label>
+      <textarea class="fn-textarea" id="fn-contenido"
+                placeholder="Escribe aquí el contenido de la noticia..."></textarea>
+
+      <label class="fn-label">URL de imagen (opcional)</label>
+      <input type="url" class="fn-input" id="fn-imagen"
+             placeholder="https://... (enlace a imagen de Drive o externa)">
+
+      <!-- FASE 2: Campo de URL de video -->
+      <label class="fn-label">🎬 URL del Video (Opcional: YouTube, Drive o MP4)</label>
+      <input type="url" class="fn-input" id="fn-video"
+             placeholder="https://youtu.be/... · drive.google.com/... · enlace.mp4">
+
+      <!-- FASE 3: Campo de publicación programada -->
+      <label class="fn-label">⏱️ Programar publicación (opcional)</label>
+      <input type="datetime-local" class="fn-datetime" id="not-fecha-prog">
+      <p class="fn-prog-hint">Si se deja en blanco, la noticia se publica inmediatamente.</p>
+
+      <div class="fn-btns">
+        <div class="fn-msg" id="fn-msg"></div>
+        <button class="btn-publicar" id="btn-publicar" onclick="publicarNoticia()">
+          📤 Publicar noticia
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FASE 1: Mensaje fallback para no-admin (seguridad defensiva) -->
+  <div id="admin-form-denied" style="display:none">
+    <div class="not-readonly-banner">
+      🔒 Solo los administradores pueden publicar noticias.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TAB 3 — GENERADOR PDF
+     ══════════════════════════════════ -->
+<div id="panel-pdf" style="display:none">
+  <div class="pdf-preview-wrap">
+    <div class="pdf-preview-titulo">🖨️ Boletín informativo para imprimir</div>
+    <div class="pdf-preview-sub">
+      Configura el boletín y descárgalo como PDF para pegar en el tablón del colegio.
+    </div>
+    <div class="pdf-config-grid">
+      <div>
+        <div class="pdf-config-label">Número de boletín</div>
+        <input type="number" class="pdf-config-input" id="pdf-num" value="1" min="1" max="99">
+      </div>
+      <div>
+        <div class="pdf-config-label">Frase motivacional</div>
+        <input type="text" class="pdf-config-input" id="pdf-frase"
+               value="¡El deporte une, el GABO inspira!">
+      </div>
+      <div>
+        <div class="pdf-config-label">Incluir tabla general</div>
+        <select class="pdf-config-select" id="pdf-inc-tabla">
+          <option value="si">Sí — incluir</option>
+          <option value="no">No incluir</option>
+        </select>
+      </div>
+      <div>
+        <div class="pdf-config-label">Incluir goleadores</div>
+        <select class="pdf-config-select" id="pdf-inc-gol">
+          <option value="si">Sí — incluir</option>
+          <option value="no">No incluir</option>
+        </select>
+      </div>
+    </div>
+    <div class="pdf-acciones">
+      <button class="btn-preview" onclick="previsualizar()">👁️ Vista previa</button>
+      <button class="btn-pdf" onclick="generarPDF()" id="btn-gen-pdf">
+        ⬇️ Descargar PDF
+      </button>
+      <div class="pdf-status" id="pdf-status"></div>
+    </div>
+  </div>
+  <div id="vista-previa-wrap" style="display:none">
+    <div style="font-size:13px;font-weight:600;color:#475569;margin-bottom:10px">Vista previa del boletín:</div>
+    <div style="border:2px solid #0047AB;border-radius:12px;overflow:hidden;background:#fff">
+      <div id="vista-previa-contenido"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BOLETIN OCULTO PARA CAPTURA PDF ── -->
+<div id="boletin-pdf" aria-hidden="true"></div>
+
+<!-- ── SCRIPTS ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+(function() {
+
+var todasNoticias = [];
+var catActiva     = "";
+var tabActivo     = "noticias";
+var datosPDF      = {};
+// ═══════════════════════════════════════════
+// FASE 1: Variable de estado de permisos
+// ═══════════════════════════════════════════
+var esAdmin = false;
+
+var CAT_CONFIG = {
+  "Resultados"   : { icono: "🏆", badge: "badge-res",  fondo: "not-cat-resultados"   },
+  "Convocatorias": { icono: "📋", badge: "badge-conv", fondo: "not-cat-convocatorias" },
+  "Logros"       : { icono: "🌟", badge: "badge-log",  fondo: "not-cat-logros"        },
+  "Curiosidades" : { icono: "💡", badge: "badge-cur",  fondo: "not-cat-curiosidades"  },
+  "General"      : { icono: "📰", badge: "badge-gen",  fondo: "not-cat-general"       }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// FASE 1: INICIALIZACIÓN CON CONTROL DE ACCESO
+// Lee window.getEsAdmin() y muestra/oculta elementos según rol.
+// ═══════════════════════════════════════════════════════════════
+function inicializarPermisos() {
+  esAdmin = (typeof window.getEsAdmin === "function") ? !!window.getEsAdmin() : false;
+
+  var tabPublicar   = document.getElementById("tab-publicar");
+  var formContainer = document.getElementById("admin-form-container");
+  var formDenied    = document.getElementById("admin-form-denied");
+
+  if (esAdmin) {
+    // Admin: mostrar tab de publicar y el formulario
+    if (tabPublicar)   tabPublicar.style.display   = "";
+    if (formContainer) formContainer.style.display = "block";
+    if (formDenied)    formDenied.style.display    = "none";
+  } else {
+    // Solo lectura: ocultar tab y formulario
+    if (tabPublicar)   tabPublicar.style.display   = "none";
+    if (formContainer) formContainer.style.display = "none";
+    if (formDenied)    formDenied.style.display    = "block";
+  }
+}
+
+// ── TABS ──
+function cambiarTab(tab) {
+  // FASE 1: Bloquear navegación al panel de publicar si no es admin
+  if (tab === "publicar" && !esAdmin) return;
+
+  tabActivo = tab;
+  var tabs = ["noticias", "publicar", "pdf"];
+  for (var i = 0; i < tabs.length; i++) {
+    var tabBtn  = document.getElementById("tab-" + tabs[i]);
+    var panelEl = document.getElementById("panel-" + tabs[i]);
+    if (tabBtn)  tabBtn.className = "not-tab" + (tabs[i] === tab ? " activo" : "");
+    if (panelEl) panelEl.style.display = tabs[i] === tab ? "block" : "none";
+  }
+  if (tab === "noticias") cargarNoticias();
+  if (tab === "pdf")      cargarDatosPDF();
+}
+window.cambiarTab = cambiarTab;
+
+// ── FILTROS ──
+function filtrarCat(cat) {
+  catActiva = cat;
+  var ids  = ["todos", "res", "conv", "log", "cur", "gen"];
+  var vals = ["", "Resultados", "Convocatorias", "Logros", "Curiosidades", "General"];
+  for (var i = 0; i < ids.length; i++) {
+    var btn = document.getElementById("cf-" + ids[i]);
+    if (btn) btn.className = "cat-chip" + (vals[i] === cat ? " activo" : "");
+  }
+  renderNoticias();
+}
+window.filtrarCat = filtrarCat;
+
+// ── CARGAR NOTICIAS ──
+function cargarNoticias() {
+  var cont = document.getElementById("lista-noticias");
+  cont.innerHTML = '<div class="cargando"><div class="cargando-spinner"></div>Cargando...</div>';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.ok) {
+        cont.innerHTML = '<div class="sin-datos">Error cargando noticias.' +
+          (res && res.mensaje ? '<br><small>' + res.mensaje + '</small>' : '') + '</div>';
+        return;
+      }
+      todasNoticias = res.datos || [];
+      renderNoticias();
+    })
+    .withFailureHandler(function(err) {
+      cont.innerHTML = '<div class="sin-datos">Error de conexión.<br><small>' + (err || "") + '</small></div>';
+    })
+    .getNoticias(50);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FASE 3: RENDER CON FILTRO DE NOTICIAS PROGRAMADAS
+// Reglas:
+//   • fecha_programada > ahora && !esAdmin  → NO renderizar
+//   • fecha_programada > ahora &&  esAdmin  → renderizar con badge
+//   • fecha_programada <= ahora || sin fecha → renderizar normalmente
+// ═══════════════════════════════════════════════════════════════
+function renderNoticias() {
+  var cont  = document.getElementById("lista-noticias");
+  var ahora = new Date();
+
+  var lista = todasNoticias.filter(function(n) {
+    // Filtro de categoría
+    if (catActiva && n.categoria !== catActiva) return false;
+
+    // FASE 3: Filtro de publicación programada
+    if (n.fecha_programada) {
+      var fp = new Date(n.fecha_programada);
+      if (!isNaN(fp.getTime()) && fp > ahora) {
+        // Todavía no es hora: solo admin la ve
+        return esAdmin;
+      }
+    }
+    return true;
+  });
+
+  if (lista.length === 0) {
+    cont.innerHTML = '<div class="sin-datos">Sin noticias publicadas aún.<br>Ve a la pestaña "Publicar" para agregar la primera.</div>';
+    return;
+  }
+
+  var html = "";
+  for (var i = 0; i < lista.length; i++) {
+    html += renderTarjetaNoticia(lista[i], ahora);
+  }
+  cont.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER DE TARJETA (integra Fase 1 + Fase 2 + Fase 3)
+// ═══════════════════════════════════════════════════════════════
+function renderTarjetaNoticia(n, ahora) {
+  var cfg       = CAT_CONFIG[n.categoria] || CAT_CONFIG["General"];
+  var fecha     = formatFechaTexto(n.fecha_publicacion);
+  var esDestaca = n.destacada === "Si" || n.destacada === true;
+
+  // FASE 3: ¿Está programada y aún no llegó la hora?
+  var esProgramada = false;
+  var badgeProg    = "";
+  if (n.fecha_programada) {
+    var fp = new Date(n.fecha_programada);
+    if (!isNaN(fp.getTime()) && fp > (ahora || new Date())) {
+      esProgramada = true;
+      badgeProg = '<span class="badge-programada">⏱️ PROGRAMADA PARA: ' + formatFechaHoraTexto(n.fecha_programada) + '</span>';
+    }
+  }
+
+  // FASE 2: Renderizar video si existe URL
+  var videoHtml = n.video_url ? renderizarVideo(n.video_url) : "";
+
+  // FASE 1: Botón eliminar solo visible para admin
+  var btnEliminar = esAdmin
+    ? '<button class="btn-not-accion del" onclick="eliminarNoticia(' + JSON.stringify(n.id_noticia) + ')">🗑️ Eliminar</button>'
+    : "";
+
+  var claseCard = "not-card" + (esProgramada ? " programada" : "");
+  var estiloCard = esDestaca ? ' style="border-color:#c9a227;border-width:2px"' : "";
+
+  return (
+    '<div class="' + claseCard + '"' + estiloCard + '>' +
+      '<div class="not-card-body">' +
+        '<div class="not-icono ' + cfg.fondo + '">' + cfg.icono + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          badgeProg +
+          '<span class="not-cat-badge ' + cfg.badge + '">' + n.categoria + '</span>' +
+          (esDestaca ? '<span style="font-size:10px;color:#c9a227;font-weight:700;margin-left:6px">⭐ Destacada</span>' : '') +
+          '<div class="not-titulo">' + (n.titulo || "") + '</div>' +
+          (n.contenido ? '<div class="not-contenido">' + truncar(String(n.contenido), 180) + '</div>' : '') +
+          (n.autor === 'IA Gemini OCR' ? '<div style="margin-top:4px"><span style="font-size:10px;background:#e8f0fb;color:#0047AB;padding:2px 8px;border-radius:10px;font-weight:700">🤖 Generada por IA · Gemini</span></div>' : '') +
+          videoHtml +
+        '</div>' +
+      '</div>' +
+      '<div class="not-footer">' +
+        '<div class="not-fecha">📅 ' + fecha + '</div>' +
+        '<div class="not-acciones">' +
+          '<button class="btn-not-accion wa" onclick="compartirWA(' + JSON.stringify(n.titulo) + ',' + JSON.stringify(n.contenido || "") + ')">📤 WhatsApp</button>' +
+          btnEliminar +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FASE 2: renderizarVideo(url) — Soporte universal
+//   • YouTube: extrae ID → <iframe src="youtube.com/embed/ID">
+//   • Google Drive: reemplaza /view por /preview → <iframe>
+//   • MP4 / webm / ogg: → <video controls preload="metadata">
+//   • CSS aspect-ratio 16:9 garantiza que no se deforme en móviles
+// ═══════════════════════════════════════════════════════════════
+function renderizarVideo(url) {
+  if (!url || typeof url !== "string") return "";
+  url = url.trim();
+
+  // ── YouTube ──
+  // Soporta: youtu.be/ID, ?v=ID, /shorts/ID, /embed/ID, /v/ID
+  var ytMatch = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|v\/))([A-Za-z0-9_-]{11})/
+  );
+  if (ytMatch) {
+    return (
+      '<div class="not-video-wrap">' +
+        '<iframe src="https://www.youtube.com/embed/' + ytMatch[1] + '" ' +
+                'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ' +
+                'allowfullscreen></iframe>' +
+      '</div>'
+    );
+  }
+
+  // ── Google Drive ──
+  // Soporta: /file/d/ID/view  y  /open?id=ID
+  var driveMatch = url.match(
+    /drive\.google\.com\/(?:file\/d\/([A-Za-z0-9_-]+)|open\?id=([A-Za-z0-9_-]+))/
+  );
+  if (driveMatch) {
+    var driveId = driveMatch[1] || driveMatch[2];
+    return (
+      '<div class="not-video-wrap">' +
+        '<iframe src="https://drive.google.com/file/d/' + driveId + '/preview" ' +
+                'allow="autoplay" allowfullscreen></iframe>' +
+      '</div>'
+    );
+  }
+
+  // ── Video directo (MP4, WebM, OGG, MOV) ──
+  if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) {
+    return (
+      '<div class="not-video-wrap">' +
+        '<video controls preload="metadata">' +
+          '<source src="' + url + '" type="video/mp4">' +
+          'Tu navegador no soporta video HTML5.' +
+        '</video>' +
+      '</div>'
+    );
+  }
+
+  // URL no reconocida como video → no renderizar nada
+  return "";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FASE 3: PUBLICAR NOTICIA CON FECHA PROGRAMADA
+// El payload incluye: video_url (Fase 2) y fecha_programada (Fase 3)
+// ═══════════════════════════════════════════════════════════════
+function publicarNoticia() {
+  // FASE 1: Verificación de permisos (doble capa de seguridad)
+  if (!esAdmin) {
+    alert("⛔ Solo los administradores pueden publicar noticias.");
+    return;
+  }
+
+  var titulo    = document.getElementById("fn-titulo-inp").value.trim();
+  var cat       = document.getElementById("fn-cat").value;
+  var contenido = document.getElementById("fn-contenido").value.trim();
+  var imagen    = document.getElementById("fn-imagen").value.trim();
+  var video     = document.getElementById("fn-video").value.trim();       // Fase 2
+  var destacada = document.getElementById("fn-destacada").value;
+  var fechaProg = document.getElementById("not-fecha-prog").value;         // Fase 3
+  var msg       = document.getElementById("fn-msg");
+  var btn       = document.getElementById("btn-publicar");
+
+  if (!titulo) {
+    msg.className   = "fn-msg err";
+    msg.textContent = "El título es requerido.";
+    return;
+  }
+  if (!contenido) {
+    msg.className   = "fn-msg err";
+    msg.textContent = "El contenido es requerido.";
+    return;
+  }
+
+  // FASE 3: Validar que la fecha programada sea futura (si se proporcionó)
+  if (fechaProg) {
+    var fpParsed = new Date(fechaProg);
+    if (isNaN(fpParsed.getTime())) {
+      msg.className   = "fn-msg err";
+      msg.textContent = "La fecha programada no es válida.";
+      return;
+    }
+    if (fpParsed <= new Date()) {
+      msg.className   = "fn-msg err";
+      msg.textContent = "La fecha programada debe ser en el futuro.";
+      return;
+    }
+  }
+
+  btn.disabled    = true;
+  btn.textContent = "Publicando...";
+  msg.textContent = "";
+
+  // Payload completo enviado a crearNoticia()
+  var payload = {
+    pin             : window.getAdminPIN ? window.getAdminPIN() : "",
+    titulo          : titulo,
+    contenido       : contenido,
+    categoria       : cat,
+    imagen_url      : imagen,
+    video_url       : video,            // FASE 2
+    fecha_programada: fechaProg || "",  // FASE 3 (ISO string o vacío = publicar ya)
+    autor           : "Docente",
+    destacada       : destacada,
+    activa          : "Si"
+  };
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled    = false;
+      btn.textContent = "📤 Publicar noticia";
+      if (res && res.ok) {
+        msg.className   = "fn-msg ok";
+        msg.textContent = fechaProg
+          ? "✓ Noticia programada para: " + formatFechaHoraTexto(fechaProg)
+          : "✓ Noticia publicada correctamente.";
+        // Limpiar formulario
+        document.getElementById("fn-titulo-inp").value  = "";
+        document.getElementById("fn-contenido").value   = "";
+        document.getElementById("fn-imagen").value      = "";
+        document.getElementById("fn-video").value       = "";
+        document.getElementById("not-fecha-prog").value = "";
+        setTimeout(function() { msg.textContent = ""; }, 4000);
+      } else {
+        msg.className   = "fn-msg err";
+        msg.textContent = "Error: " + ((res && res.mensaje) ? res.mensaje : "Respuesta inesperada del servidor.");
+      }
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled    = false;
+      btn.textContent = "📤 Publicar noticia";
+      msg.className   = "fn-msg err";
+      msg.textContent = "Error de conexión: " + (err || "intenta de nuevo.");
+    })
+    .crearNoticia(payload);
+}
+window.publicarNoticia = publicarNoticia;
+
+// ── ELIMINAR NOTICIA ──
+// FASE 1: Solo admin puede eliminar
+function eliminarNoticia(id) {
+  if (!esAdmin) {
+    alert("⛔ Solo los administradores pueden eliminar noticias.");
+    return;
+  }
+  if (!confirm("¿Eliminar esta noticia? Esta acción no se puede deshacer.")) return;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.ok) { cargarNoticias(); }
+      else { alert("Error: " + res.mensaje); }
+    })
+    .withFailureHandler(function() { alert("Error de conexión."); })
+    .eliminarNoticia(id, window.getAdminPIN ? window.getAdminPIN() : "");
+}
+window.eliminarNoticia = eliminarNoticia;
+
+// ── COMPARTIR EN WHATSAPP ──
+function compartirWA(titulo, contenido) {
+  var texto = "\uD83C\uDFC6 *Mundial GABO 2026*\n\n" +
+              "*" + titulo + "*\n" +
+              (contenido ? contenido.substring(0, 200) : "") +
+              "\n\n\uD83C\uDFEB I.E. GABO \xB7 Cartago, Valle del Cauca";
+  window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
+}
+window.compartirWA = compartirWA;
+
+// ── CARGA DE DATOS PARA PDF ──
+function cargarDatosPDF() {
+  var status = document.getElementById("pdf-status");
+  status.textContent = "Cargando datos del torneo...";
+  var pendientes = 4;
+  datosPDF = {};
+  function listo() {
+    pendientes--;
+    if (pendientes === 0) status.textContent = "✓ Datos listos. Configura y descarga el boletín.";
+  }
+  google.script.run
+    .withSuccessHandler(function(res) { datosPDF.tablaGeneral = (res.ok && res.datos) ? res.datos.slice(0,6) : []; listo(); })
+    .withFailureHandler(function() { datosPDF.tablaGeneral = []; listo(); })
+    .getTablaGeneral();
+  google.script.run
+    .withSuccessHandler(function(res) { datosPDF.proximosPartidos = (res.ok && res.datos) ? res.datos.slice(0,5) : []; listo(); })
+    .withFailureHandler(function() { datosPDF.proximosPartidos = []; listo(); })
+    .getProximosPartidos(5);
+  google.script.run
+    .withSuccessHandler(function(res) { datosPDF.resultados = (res.ok && res.datos) ? res.datos.slice(0,5) : []; listo(); })
+    .withFailureHandler(function() { datosPDF.resultados = []; listo(); })
+    .getPartidosFinalizados(5);
+  google.script.run
+    .withSuccessHandler(function(res) {
+      datosPDF.goleadores = (res.ok && res.datos) ? res.datos.slice(0,5) : [];
+      google.script.run
+        .withSuccessHandler(function(rn) { datosPDF.noticias = (rn.ok && rn.datos) ? rn.datos.slice(0,2) : []; listo(); })
+        .withFailureHandler(function() { datosPDF.noticias = []; listo(); })
+        .getNoticias(2);
+    })
+    .withFailureHandler(function() { datosPDF.goleadores = []; datosPDF.noticias = []; listo(); listo(); })
+    .getGoleadores("", 5);
+}
+
+// ── CONSTRUIR HTML DEL BOLETIN ──
+function construirBoletinHTML() {
+  var num    = document.getElementById("pdf-num").value    || "1";
+  var frase  = document.getElementById("pdf-frase").value  || "¡El deporte une, el GABO inspira!";
+  var incTab = document.getElementById("pdf-inc-tabla").value === "si";
+  var incGol = document.getElementById("pdf-inc-gol").value  === "si";
+  var fecha  = new Date().toLocaleDateString("es-CO", { day:"numeric", month:"long", year:"numeric" });
+
+  var html =
+    '<div class="bol-page">' +
+    '<div class="bol-header">' +
+      '<div>' +
+        '<div class="bol-h-titulo">Mundial GABO 2026</div>' +
+        '<div class="bol-h-sub">I.E. GABO \xB7 Cartago, Valle del Cauca \xB7 Jornada Tarde</div>' +
+        '<div class="bol-h-sub">Docente: Elkin Dario Florez Valderrama</div>' +
+      '</div>' +
+      '<div style="text-align:right">' +
+        '<div class="bol-h-num">Bolet\xEDn #' + num + '</div>' +
+        '<div class="bol-h-fecha">' + fecha + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="bol-frase">"' + frase + '"</div>' +
+    '<div class="bol-grid">';
+
+  if (incTab && datosPDF.tablaGeneral && datosPDF.tablaGeneral.length > 0) {
+    html += '<div class="bol-seccion"><div class="bol-sec-titulo">\uD83C\uDFC6 Clasificaci\xF3n General</div><div class="bol-sec-body"><table class="bol-tabla"><thead><tr><th>#</th><th>Equipo</th><th>PJ</th><th>Pts</th></tr></thead><tbody>';
+    for (var i = 0; i < datosPDF.tablaGeneral.length; i++) {
+      var eq = datosPDF.tablaGeneral[i];
+      html += '<tr><td>' + (i+1) + '</td><td>' + (eq.pais||eq.grupo) + '</td><td>' + (eq.pj||0) + '</td><td class="bol-pts">' + (eq.puntos||0) + '</td></tr>';
+    }
+    html += '</tbody></table></div></div>';
+  }
+
+  if (incGol && datosPDF.goleadores && datosPDF.goleadores.length > 0) {
+    html += '<div class="bol-seccion"><div class="bol-sec-titulo">\u26BD Goleadores</div><div class="bol-sec-body">';
+    for (var j = 0; j < datosPDF.goleadores.length; j++) {
+      var g = datosPDF.goleadores[j];
+      html += '<div class="bol-gol-fila"><div class="bol-gol-rank">' + (j+1) + '</div><div class="bol-gol-nombre">' + (g.nombre_jugador||"Jugador") + '</div><div style="font-size:10px;color:#94a3b8">Gr.' + (g.grupo||"") + '</div><div class="bol-gol-num">' + (g.goles||0) + ' \u26BD</div></div>';
+    }
+    html += '</div></div>';
+  }
+
+  html += '</div>'; // cierre bol-grid
+
+  if (datosPDF.proximosPartidos && datosPDF.proximosPartidos.length > 0) {
+    html += '<div class="bol-seccion" style="margin-bottom:12px"><div class="bol-sec-titulo">\uD83D\uDCC5 Pr\xF3ximos Partidos</div><div class="bol-sec-body">';
+    for (var k = 0; k < datosPDF.proximosPartidos.length; k++) {
+      var p = datosPDF.proximosPartidos[k];
+      html += '<div class="bol-partido"><div class="bol-part-equipos">' + (p.pais_local||p.grupo_local) + ' vs ' + (p.pais_visitante||p.grupo_visitante) + '</div><div class="bol-part-meta">Gr.' + p.grado + '\xB0 \xB7 ' + p.deporte + '</div>' + (p.hora ? '<div style="font-size:10px;color:#0047AB;font-weight:600">' + p.hora + '</div>' : '') + '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  if (datosPDF.resultados && datosPDF.resultados.length > 0) {
+    html += '<div class="bol-seccion" style="margin-bottom:12px"><div class="bol-sec-titulo">\uD83D\uDFE2 Resultados Recientes</div><div class="bol-sec-body">';
+    for (var r = 0; r < datosPDF.resultados.length; r++) {
+      var pr = datosPDF.resultados[r];
+      html += '<div class="bol-partido"><div class="bol-part-equipos">' + (pr.pais_local||pr.grupo_local) + ' vs ' + (pr.pais_visitante||pr.grupo_visitante) + '</div><div class="bol-part-score">' + (pr.goles_local||0) + ' \u2013 ' + (pr.goles_visitante||0) + '</div></div>';
+    }
+    html += '</div></div>';
+  }
+
+  if (datosPDF.noticias && datosPDF.noticias.length > 0) {
+    var n0 = datosPDF.noticias[0];
+    html += '<div class="bol-seccion" style="margin-bottom:12px"><div class="bol-sec-titulo">\uD83D\uDCF0 Noticia Destacada</div><div class="bol-sec-body"><div class="bol-noticia"><div class="bol-not-titulo">' + (n0.titulo||"") + '</div>' + (n0.contenido ? '<div class="bol-not-cuerpo">' + truncar(String(n0.contenido), 250) + '</div>' : '') + '</div></div></div>';
+  }
+
+  html +=
+    '<div class="bol-footer">' +
+      '<div>' +
+        '<div style="font-weight:700;color:#0047AB;margin-bottom:2px">I.E. GABO \xB7 Cartago, Valle del Cauca \xB7 2026</div>' +
+        '<div>Docente: Elkin Dario Florez Valderrama</div>' +
+        '<div style="margin-top:4px">\u26BD Juegos Interclases \xB7 Jornada Tarde</div>' +
+      '</div>' +
+      '<div class="bol-qr">QR<br>Plataforma<br>Online</div>' +
+    '</div>' +
+    '</div>';
+
+  return html;
+}
+
+// ── VISTA PREVIA ──
+function previsualizar() {
+  var html = construirBoletinHTML();
+  var wrap = document.getElementById("vista-previa-wrap");
+  document.getElementById("vista-previa-contenido").innerHTML = html;
+  wrap.style.display = "block";
+  wrap.scrollIntoView({ behavior: "smooth" });
+}
+window.previsualizar = previsualizar;
+
+// ── GENERAR PDF ──
+function generarPDF() {
+  var btn    = document.getElementById("btn-gen-pdf");
+  var status = document.getElementById("pdf-status");
+  btn.disabled = true;
+  btn.textContent = "⏳ Generando PDF...";
+  status.textContent = "Preparando el boletín...";
+
+  var html = construirBoletinHTML();
+  var cont = document.getElementById("boletin-pdf");
+  cont.innerHTML = html;
+
+  setTimeout(function() {
+    status.textContent = "Capturando...";
+    html2canvas(cont, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false })
+      .then(function(canvas) {
+        status.textContent = "Creando PDF...";
+        var imgData = canvas.toDataURL("image/png");
+        var jsPDF   = window.jspdf.jsPDF;
+        var doc     = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        var pageW   = doc.internal.pageSize.getWidth();
+        var pageH   = doc.internal.pageSize.getHeight();
+        var imgW    = pageW;
+        var imgH    = (canvas.height * pageW) / canvas.width;
+        if (imgH > pageH) { imgH = pageH - 10; imgW = (canvas.width * imgH) / canvas.height; }
+        doc.addImage(imgData, "PNG", (pageW - imgW) / 2, 5, imgW, imgH);
+        var num = document.getElementById("pdf-num").value || "1";
+        doc.save("Boletin_GABO_2026_N" + num + ".pdf");
+        btn.disabled = false;
+        btn.textContent = "⬇️ Descargar PDF";
+        status.textContent = "✓ PDF descargado correctamente.";
+        cont.innerHTML = "";
+      })
+      .catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = "⬇️ Descargar PDF";
+        status.textContent = "Error generando PDF: " + err.message;
+      });
+  }, 300);
+}
+window.generarPDF = generarPDF;
+
+// ── HELPERS ──
+function truncar(texto, max) {
+  if (!texto) return "";
+  return texto.length <= max ? texto : texto.substring(0, max) + "...";
+}
+
+function formatFechaTexto(f) {
+  if (!f) return "—";
+  try {
+    return new Date(f).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
+  } catch(e) { return String(f); }
+}
+
+// FASE 3: Formato fecha + hora para el badge de programada
+function formatFechaHoraTexto(f) {
+  if (!f) return "—";
+  try {
+    var d = new Date(f);
+    return d.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" }) +
+           " · " +
+           d.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+  } catch(e) { return String(f); }
+}
+
+// ── INICIALIZAR ──
+// FASE 1: Diferir inicialización para garantizar que window.getEsAdmin
+// ya esté expuesta por el Shell antes de que el módulo inyectado la consulte.
+// El Shell inyecta el HTML y luego re-ejecuta los <script> via createElement;
+// ambos ocurren de forma síncrona, por lo que un setTimeout(0) es suficiente
+// para ceder el turno al hilo principal y que las asignaciones de Shell.html
+// (window.getEsAdmin, window.getAdminPIN) queden completamente registradas.
+function _init() {
+  inicializarPermisos();
+  cargarNoticias();
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", _init);
+} else {
+  setTimeout(_init, 0);
+}
+
+})();
+</script>
+</div>

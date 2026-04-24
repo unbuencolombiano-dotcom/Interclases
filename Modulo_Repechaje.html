@@ -1,0 +1,861 @@
+<!-- ============================================================
+     Modulo_Repechaje.html — Gestión del Repechaje Inter-Grados
+     Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca
+     Consume: getResumenRepechaje(), getCampeonesGrado(),
+              getJugadoresRefuerzo(), actualizarRefuerzos(),
+              registrarResultadoRepechaje(),
+              actualizarObservacionesRepechaje(),
+              generarEstructuraRepechaje()
+     ============================================================ -->
+
+<div id="modulo-repechaje">
+
+<style>
+#modulo-repechaje {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* ── CABECERA ── */
+.rep-header {
+  background: linear-gradient(135deg, #0a0e1a 0%, #1a7a4a 100%);
+  border-radius: 18px;
+  padding: 24px 26px;
+  margin-bottom: 20px;
+  color: #fff;
+}
+.rep-header h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 700; margin: 0 0 4px;
+}
+.rep-header p { font-size: 13px; color: rgba(255,255,255,.6); margin: 0 0 16px; }
+.rep-explicacion {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px; padding: 12px 16px;
+  font-size: 12px; color: rgba(255,255,255,.75);
+  line-height: 1.6;
+}
+
+/* ── GENERADOR ── */
+.rep-gen-wrap {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 16px; padding: 20px; margin-bottom: 20px;
+}
+.rep-gen-titulo {
+  font-size: 14px; font-weight: 700; color: #0d1117; margin-bottom: 12px;
+}
+.rep-gen-grid {
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px;
+  align-items: flex-end;
+}
+@media (max-width: 560px) { .rep-gen-grid { grid-template-columns: 1fr; } }
+.rep-label {
+  font-size: 11px; font-weight: 600; color: #475569;
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px;
+}
+.rep-input, .rep-select {
+  width: 100%; padding: 9px 12px;
+  border: 1.5px solid #e2e8f0; border-radius: 9px;
+  font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0d1117; background: #fff; box-sizing: border-box;
+}
+.rep-input:focus, .rep-select:focus {
+  outline: none; border-color: #1a7a4a;
+}
+.btn-generar {
+  padding: 10px 20px; border: none; border-radius: 9px;
+  background: #1a7a4a; color: #fff;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; transition: all .2s;
+  white-space: nowrap;
+}
+.btn-generar:hover { background: #145c38; }
+.btn-generar:disabled { opacity: .6; cursor: not-allowed; }
+.rep-gen-msg { font-size: 12px; font-weight: 600; margin-top: 8px; }
+.msg-ok  { color: #1a7a4a; }
+.msg-err { color: #c0392b; }
+
+/* ── TARJETA PARTIDO REPECHAJE ── */
+.rep-partido {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 18px; overflow: hidden; margin-bottom: 20px;
+}
+.rep-partido-head {
+  background: linear-gradient(135deg, #1a7a4a 0%, #0f5c35 100%);
+  padding: 14px 20px;
+  display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+.rep-num-badge {
+  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.3);
+  border-radius: 8px; padding: 4px 12px;
+  font-size: 13px; font-weight: 700; color: #fff;
+}
+.rep-estado-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px;
+}
+.rep-badge-prog { background: #e8f0fb; color: #0047AB; }
+.rep-badge-fin  { background: #e6f4ed; color: #1a7a4a; }
+
+/* CUERPO DEL PARTIDO */
+.rep-partido-body { padding: 0; }
+
+/* BLOQUE EQUIPO */
+.rep-equipo-bloque {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.rep-equipo-bloque:last-of-type { border-bottom: none; }
+.rep-equipo-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+}
+.rep-eq-flag   { font-size: 36px; line-height: 1; }
+.rep-eq-info   { flex: 1; }
+.rep-eq-pais   { font-size: 16px; font-weight: 700; color: #0d1117; }
+.rep-eq-grupo  { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+.rep-eq-badge  {
+  font-size: 11px; padding: 3px 9px; border-radius: 8px;
+  background: #e6f4ed; color: #1a7a4a; font-weight: 600;
+}
+
+/* JUGADORES TITULARES */
+.rep-jug-titulo {
+  font-size: 11px; font-weight: 600; color: #64748b;
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+}
+.rep-jug-lista {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.rep-jug-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 8px;
+  border: 1px solid #e2e8f0; background: #f8fafc;
+  font-size: 11px; color: #0d1117; font-weight: 500;
+}
+.rep-jug-chip.mujer { border-color: #ec4899; background: #fdf2f8; }
+.rep-jug-num { font-size: 10px; color: #94a3b8; }
+
+/* REFUERZOS */
+.rep-ref-titulo {
+  font-size: 11px; font-weight: 600; color: #c9a227;
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.rep-ref-lista {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.rep-ref-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 8px;
+  border: 1px solid #c9a227; background: #fdf6e3;
+  font-size: 11px; color: #92400e; font-weight: 600;
+}
+.rep-ref-remove {
+  background: none; border: none; color: #c0392b;
+  cursor: pointer; font-size: 12px; padding: 0; line-height: 1;
+}
+.btn-sel-refuerzo {
+  padding: 6px 12px; border-radius: 8px;
+  border: 1.5px dashed #c9a227; background: transparent;
+  color: #c9a227; font-size: 11px; font-weight: 600;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all .2s;
+}
+.btn-sel-refuerzo:hover { background: #fdf6e3; }
+.btn-sel-refuerzo:disabled { opacity: .4; cursor: not-allowed; }
+
+/* DIVISOR VS */
+.rep-vs-divisor {
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px 20px; background: #f8fafc;
+  border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
+}
+.rep-vs-score {
+  font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 900;
+  color: #0d1117; letter-spacing: 3px;
+}
+.rep-vs-label { font-size: 24px; font-weight: 700; color: #cbd5e1; }
+
+/* RESULTADO Y OBSERVACIONES */
+.rep-resultado-section {
+  padding: 16px 20px; border-top: 1px solid #f1f5f9;
+}
+.rep-result-grid {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px;
+  align-items: center; margin-bottom: 14px;
+}
+.rep-score-inp {
+  width: 100%; height: 52px;
+  border: 2px solid #e2e8f0; border-radius: 10px;
+  font-size: 26px; font-weight: 700; text-align: center;
+  font-family: 'Syne', sans-serif; color: #0d1117;
+  background: #f8fafc;
+}
+.rep-score-inp:focus { outline: none; border-color: #1a7a4a; }
+.rep-obs-label {
+  font-size: 11px; font-weight: 600; color: #475569;
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px;
+}
+.rep-obs-textarea {
+  width: 100%; padding: 9px 12px;
+  border: 1.5px solid #e2e8f0; border-radius: 9px;
+  font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0d1117; resize: vertical; min-height: 72px;
+  box-sizing: border-box; margin-bottom: 12px;
+}
+.rep-obs-textarea:focus { outline: none; border-color: #1a7a4a; }
+.rep-acciones { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn-rep {
+  padding: 8px 18px; border-radius: 9px; border: 1px solid #e2e8f0;
+  background: #fff; color: #475569;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; transition: all .2s;
+}
+.btn-rep:hover { border-color: #1a7a4a; color: #1a7a4a; }
+.btn-rep.verde { background: #e6f4ed; border-color: #1a7a4a; color: #1a7a4a; }
+.btn-rep.verde:hover { background: #1a7a4a; color: #fff; }
+.btn-rep:disabled { opacity: .5; cursor: not-allowed; }
+.rep-guardado { font-size: 11px; color: #1a7a4a; font-weight: 600; display: none; }
+.rep-guardado.visible { display: inline; }
+
+/* ── MODAL SELECCION REFUERZOS ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(13,17,23,.6); z-index: 300;
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 18px; padding: 24px;
+  width: 100%; max-width: 520px; max-height: 80vh;
+  overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-titulo {
+  font-size: 16px; font-weight: 700; color: #0d1117; margin-bottom: 6px;
+}
+.modal-sub { font-size: 12px; color: #64748b; margin-bottom: 14px; }
+.jug-select-fila {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer;
+}
+.jug-select-fila:last-child { border-bottom: none; }
+.jug-select-fila:hover { background: #f8fafc; border-radius: 8px; padding-left: 6px; }
+.jug-sel-check {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 2px solid #e2e8f0; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 10px;
+}
+.jug-sel-check.marcado { background: #1a7a4a; border-color: #1a7a4a; color: #fff; }
+.jug-sel-nombre { flex: 1; font-size: 13px; font-weight: 600; color: #0d1117; }
+.jug-sel-meta   { font-size: 11px; color: #94a3b8; }
+.jug-sel-flag   { font-size: 16px; }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.btn-modal-cancel {
+  padding: 9px 18px; border: 1.5px solid #e2e8f0;
+  border-radius: 8px; background: #fff; color: #64748b;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.btn-modal-ok {
+  padding: 9px 20px; border: none; border-radius: 8px;
+  background: #1a7a4a; color: #fff; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: background .2s;
+}
+.btn-modal-ok:hover { background: #145c38; }
+
+/* ── UTIL ── */
+.cargando {
+  text-align: center; padding: 48px; color: #94a3b8;
+}
+.cargando-spinner {
+  width: 30px; height: 30px; border: 3px solid #e2e8f0;
+  border-top-color: #1a7a4a; border-radius: 50%;
+  animation: girar 1s linear infinite; margin: 0 auto 10px;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+.sin-datos { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; line-height: 1.6; }
+</style>
+
+<!-- ── CABECERA ── -->
+<div class="rep-header">
+  <h2>🏆 Repechaje Inter-Grados</h2>
+  <p>Evento final del Mundial GABO 2026 · Confraternización y selección de talentos</p>
+  <div class="rep-explicacion">
+    <strong>¿Cómo funciona?</strong> El campeón de cada grado se refuerza con 2–3 jugadores
+    de los demás grupos de su mismo grado y enfrenta al campeón del grado siguiente.
+    4 partidos en total. El docente observa y anota talentos para los intercolegiados.
+  </div>
+</div>
+
+<!-- ── GENERADOR DE ESTRUCTURA ── -->
+<div class="rep-gen-wrap">
+  <div class="rep-gen-titulo">&#x2699;&#xFE0F; Panel de Finales Inter-grados</div>
+
+  <!-- Info explicativa -->
+  <div style="background:#e8f0fb;border:1px solid rgba(0,71,171,.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#0047AB;line-height:1.6">
+    <strong>Flujo correcto:</strong> Primero deben finalizarse TODOS los partidos de fase regular.
+    Luego genera las finales aqu&iacute;. Las finales son:<br>
+    &bull; <strong>Final Especial Primaria:</strong> Campe&oacute;n 4&deg; vs Campe&oacute;n 5&deg; (Mini Futsal + Mini Voleibol)<br>
+    &bull; <strong>Super Final Bachillerato:</strong> Campe&oacute;n 6&deg; vs Campe&oacute;n 7&deg; (Futsal + Voleibol)<br>
+    &bull; Grado 4 puede reforzarse con m&aacute;x 2 jugadores. Grado 6 puede reforzarse con 1 jugador.
+  </div>
+
+  <!-- Fila 1: Fecha y hora -->
+  <div class="rep-gen-grid" style="margin-bottom:10px">
+    <div>
+      <div class="rep-label">Fecha de las finales</div>
+      <input type="date" class="rep-input" id="rep-fecha">
+    </div>
+    <div>
+      <div class="rep-label">Hora de inicio</div>
+      <input type="time" class="rep-input" id="rep-hora" value="13:00">
+    </div>
+  </div>
+
+  <!-- Fila 2: Botones de acción -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <button class="btn-generar" onclick="generarEstructura()" id="btn-generar" style="flex:1;min-width:180px">
+      &#x1F3C6; Generar Finales (4v5 + 6v7)
+    </button>
+    <button onclick="generarCalendarioAdm()" id="btn-calendario"
+            style="flex:1;min-width:180px;padding:10px 16px;border:1.5px solid #0047AB;border-radius:10px;background:#e8f0fb;color:#0047AB;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+      &#x1F4C5; Distribuir Calendario
+    </button>
+  </div>
+
+  <div class="rep-gen-msg" id="rep-gen-msg"></div>
+
+  <!-- Sub-panel calendario -->
+  <div id="panel-calendario" style="display:none;margin-top:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px">
+    <div style="font-size:13px;font-weight:700;color:#0d1117;margin-bottom:10px">&#x1F4C5; Distribuidir partidos en fechas reales</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:12px;line-height:1.5">
+      Asigna fechas autom&aacute;ticamente a todos los partidos ya generados:
+      2 partidos por d&iacute;a (1 Bachillerato + 1 Primaria) siguiendo la rotaci&oacute;n oficial.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div class="rep-label">Fecha de inicio</div>
+        <input type="date" class="rep-input" id="cal-fecha">
+      </div>
+      <div>
+        <div class="rep-label">Hora partido 1 (Bach.)</div>
+        <input type="time" class="rep-input" id="cal-hora1" value="13:00">
+      </div>
+      <div>
+        <div class="rep-label">Hora partido 2 (Prim.)</div>
+        <input type="time" class="rep-input" id="cal-hora2" value="14:30">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="ejecutarCalendario()"
+              style="padding:9px 20px;border:none;border-radius:9px;background:#0047AB;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+        Asignar fechas
+      </button>
+      <button onclick="document.getElementById('panel-calendario').style.display='none'"
+              style="padding:9px 14px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;color:#64748b;font-size:13px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">
+        Cancelar
+      </button>
+      <span id="cal-msg" style="font-size:12px;font-weight:600"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── LISTA DE PARTIDOS ── -->
+<div id="rep-partidos-lista">
+  <div class="cargando"><div class="cargando-spinner"></div>Cargando repechaje...</div>
+</div>
+
+<!-- ── MODAL SELECCIÓN DE REFUERZOS ── -->
+<div class="modal-overlay" id="modal-refuerzos">
+  <div class="modal-box">
+    <div class="modal-titulo">⭐ Seleccionar refuerzos</div>
+    <div class="modal-sub" id="modal-ref-sub">Máximo 3 jugadores de otros grupos del mismo grado.</div>
+    <div id="modal-ref-body">
+      <div class="cargando"><div class="cargando-spinner"></div></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-modal-ok" onclick="confirmarRefuerzos()">Confirmar refuerzos</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCRIPTS ── -->
+<script>
+// flagImg global de Shell.html
+
+(function() {
+
+var resumenData         = [];
+var modalCtx            = {};   // contexto del modal actual
+var seleccionadosModal  = [];   // jugadores seleccionados en el modal
+
+// ── CARGAR RESUMEN ──
+function cargarResumen() {
+  var cont = document.getElementById("rep-partidos-lista");
+  cont.innerHTML = '<div class="cargando"><div class="cargando-spinner"></div>Cargando...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        cont.innerHTML =
+          '<div class="sin-datos">No hay partidos de repechaje configurados aún.<br>' +
+          'Usa el generador de arriba para crearlos automáticamente una vez que<br>' +
+          'todos los torneos hayan finalizado y haya un campeón por grado.</div>';
+        return;
+      }
+      resumenData = res.datos;
+      renderResumen();
+    })
+    .withFailureHandler(function() {
+      cont.innerHTML = '<div class="sin-datos">Error de conexión. Intenta de nuevo.</div>';
+    })
+    .getResumenRepechaje();
+}
+
+// ── RENDER RESUMEN ──
+function renderResumen() {
+  var cont = document.getElementById("rep-partidos-lista");
+  var html = "";
+
+  for (var i = 0; i < resumenData.length; i++) {
+    html = html + renderTarjetaRepechaje(resumenData[i]);
+  }
+
+  cont.innerHTML = html;
+}
+
+function renderTarjetaRepechaje(p) {
+  var esFin  = String(p.estado) === "Finalizado";
+  var numLabel = "R" + p.numero_partido;
+  var badgeClass = esFin ? "rep-badge-fin" : "rep-badge-prog";
+  var badgeTexto = esFin ? "🟢 Finalizado" : "🔵 Programado";
+
+  var glVal = (p.goles_a !== "" && p.goles_a !== undefined) ? p.goles_a : "";
+  var gvVal = (p.goles_b !== "" && p.goles_b !== undefined) ? p.goles_b : "";
+  var scoreTexto = esFin ? (glVal + " — " + gvVal) : "VS";
+
+  var gradoLabel = {
+    1: "Campeón 3° vs Campeón 4°",
+    2: "Campeón 4° vs Campeón 5°",
+    3: "Campeón 5° vs Campeón 6°",
+    4: "Campeón 6° vs Campeón 7°"
+  };
+
+  return (
+    '<div class="rep-partido" id="rep-card-' + p.id_repechaje + '">' +
+      // HEAD
+      '<div class="rep-partido-head">' +
+        '<div>' +
+          '<div class="rep-num-badge">' + numLabel + '</div>' +
+          '<div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:3px">' +
+            (gradoLabel[p.numero_partido] || "") +
+          '</div>' +
+        '</div>' +
+        '<span class="rep-estado-badge ' + badgeClass + '">' + badgeTexto + '</span>' +
+      '</div>' +
+
+      // EQUIPO A
+      renderBloqueEquipo(p.equipo_a, p.id_repechaje, "a", esFin) +
+
+      // DIVISOR VS / MARCADOR
+      '<div class="rep-vs-divisor">' +
+        (esFin
+          ? '<div class="rep-vs-score">' + glVal + ' — ' + gvVal + '</div>'
+          : '<div class="rep-vs-label">VS</div>') +
+      '</div>' +
+
+      // EQUIPO B
+      renderBloqueEquipo(p.equipo_b, p.id_repechaje, "b", esFin) +
+
+      // RESULTADO Y OBSERVACIONES
+      '<div class="rep-resultado-section">' +
+        '<div style="font-size:13px;font-weight:700;color:#0d1117;margin-bottom:12px">' +
+          (esFin ? '✏️ Editar resultado' : '⚽ Registrar resultado') +
+        '</div>' +
+
+        '<div class="rep-result-grid">' +
+          '<div>' +
+            '<div style="font-size:11px;color:#64748b;margin-bottom:4px">' + (p.equipo_a.pais || p.equipo_a.grupo) + '</div>' +
+            '<input class="rep-score-inp" type="number" min="0" max="99"' +
+                   ' value="' + (glVal !== "" ? glVal : "0") + '"' +
+                   ' id="gl-' + p.id_repechaje + '">' +
+          '</div>' +
+          '<div style="font-size:20px;font-weight:700;color:#94a3b8;text-align:center">—</div>' +
+          '<div>' +
+            '<div style="font-size:11px;color:#64748b;margin-bottom:4px">' + (p.equipo_b.pais || p.equipo_b.grupo) + '</div>' +
+            '<input class="rep-score-inp" type="number" min="0" max="99"' +
+                   ' value="' + (gvVal !== "" ? gvVal : "0") + '"' +
+                   ' id="gv-' + p.id_repechaje + '">' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="rep-obs-label">Observaciones de talentos (para intercolegiados)</div>' +
+        '<textarea class="rep-obs-textarea" id="obs-' + p.id_repechaje + '"' +
+                  ' placeholder="Anota los jugadores destacados, sus cualidades, posibles convocatorias...">' +
+          (p.observaciones || "") +
+        '</textarea>' +
+
+        '<div class="rep-acciones">' +
+          '<button class="btn-rep verde" onclick="guardarResultado(\'' + p.id_repechaje + '\')">✓ Guardar</button>' +
+          '<button class="btn-rep"       onclick="guardarObservaciones(\'' + p.id_repechaje + '\')">📝 Solo guardar notas</button>' +
+          '<span class="rep-guardado" id="msg-' + p.id_repechaje + '">✓ Guardado</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function renderBloqueEquipo(equipo, idRep, lado, esFin) {
+  var flag = flagImg(equipo.bandera || "");
+
+  // Jugadores titulares
+  var titularesHtml = "";
+  var titulares = equipo.titulares || [];
+  for (var i = 0; i < titulares.length; i++) {
+    var t   = titulares[i];
+    var esMujer = String(t.genero).toLowerCase() === "femenino" || String(t.genero).toLowerCase() === "f";
+    titularesHtml = titularesHtml +
+      '<div class="rep-jug-chip' + (esMujer ? " mujer" : "") + '">' +
+        (esMujer ? "♀ " : "") +
+        (t.nombre_completo || "Jugador") +
+        (t.numero_camiseta ? ' <span class="rep-jug-num">N°' + t.numero_camiseta + '</span>' : '') +
+      '</div>';
+  }
+
+  // Refuerzos seleccionados
+  var refuerzosHtml = "";
+  var refuerzos = equipo.refuerzos || [];
+  for (var r = 0; r < refuerzos.length; r++) {
+    var ref = refuerzos[r];
+    refuerzosHtml = refuerzosHtml +
+      '<div class="rep-ref-chip">' +
+        '⭐ ' + (ref.nombre_completo || "Jugador") +
+        ' <span style="font-size:10px;opacity:.7">(Gr.' + (ref.grupo || "") + ')</span>' +
+        (!esFin
+          ? '<button class="rep-ref-remove" onclick="quitarRefuerzo(\'' + idRep + "','" + lado + "','" + ref.id_jugador + '\')" title="Quitar">✕</button>'
+          : '') +
+      '</div>';
+  }
+
+  var btnLabel = "⭐ Elegir refuerzos" + (refuerzos.length > 0 ? " (" + refuerzos.length + "/3)" : "");
+
+  return (
+    '<div class="rep-equipo-bloque">' +
+      '<div class="rep-equipo-header">' +
+        '<div class="rep-eq-flag">' + flag + '</div>' +
+        '<div class="rep-eq-info">' +
+          '<div class="rep-eq-pais">' + (equipo.pais || equipo.grupo || "—") + '</div>' +
+          '<div class="rep-eq-grupo">Grupo ' + (equipo.grupo || "—") + ' · Campeón de su grado</div>' +
+        '</div>' +
+        '<span class="rep-eq-badge">🏆 Campeón</span>' +
+      '</div>' +
+
+      '<div class="rep-jug-titulo">Jugadores titulares (' + titulares.length + ')</div>' +
+      '<div class="rep-jug-lista">' + (titularesHtml || '<span style="font-size:12px;color:#94a3b8">Sin jugadores registrados</span>') + '</div>' +
+
+      '<div class="rep-ref-titulo">⭐ Refuerzos elegidos</div>' +
+      '<div class="rep-ref-lista">' +
+        (refuerzosHtml || '<span style="font-size:12px;color:#94a3b8">Sin refuerzos seleccionados aún</span>') +
+      '</div>' +
+
+      (!esFin
+        ? '<button class="btn-sel-refuerzo"' +
+          ' onclick="abrirModalRefuerzos(\'' + idRep + "','" + lado + "','" + equipo.id_equipo + "','" + (equipo.pais || equipo.grupo) + '\',\'' + equipo.grupo.charAt(0) + '\')"' +
+          (refuerzos.length >= 3 ? ' disabled' : '') + '>' +
+          btnLabel +
+          '</button>'
+        : '') +
+    '</div>'
+  );
+}
+
+// ── MODAL REFUERZOS ──
+var jugadoresDisponibles = [];
+
+function abrirModalRefuerzos(idRep, lado, idEquipo, paisEquipo, grado) {
+  modalCtx = { idRep: idRep, lado: lado, idEquipo: idEquipo, paisEquipo: paisEquipo, grado: grado };
+  seleccionadosModal = [];
+
+  // Pre-cargar refuerzos ya elegidos
+  var datos = buscarPartidoLocal(idRep);
+  if (datos) {
+    var refActuales = lado === "a" ? datos.equipo_a.refuerzos : datos.equipo_b.refuerzos;
+    for (var i = 0; i < (refActuales || []).length; i++) {
+      seleccionadosModal.push(String(refActuales[i].id_jugador));
+    }
+  }
+
+  document.getElementById("modal-ref-sub").textContent =
+    "Refuerzos para " + paisEquipo + " — máximo 3, de otros grupos del grado " + grado + "°.";
+  document.getElementById("modal-ref-body").innerHTML =
+    '<div class="cargando"><div class="cargando-spinner"></div>Cargando jugadores...</div>';
+  document.getElementById("modal-refuerzos").classList.add("visible");
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        document.getElementById("modal-ref-body").innerHTML =
+          '<div style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">' +
+          'No hay jugadores disponibles de otros grupos del grado ' + grado + '°.</div>';
+        return;
+      }
+      jugadoresDisponibles = res.datos;
+      renderModalRefuerzos();
+    })
+    .withFailureHandler(function() {
+      document.getElementById("modal-ref-body").innerHTML =
+        '<div style="color:#c0392b;padding:20px">Error cargando jugadores.</div>';
+    })
+    .getJugadoresRefuerzo(idEquipo, grado);
+}
+window.abrirModalRefuerzos = abrirModalRefuerzos;
+
+function renderModalRefuerzos() {
+  var html = "";
+
+  // Agrupar por grupo
+  var grupos = {};
+  for (var i = 0; i < jugadoresDisponibles.length; i++) {
+    var j = jugadoresDisponibles[i];
+    var g = String(j.grupo);
+    if (!grupos[g]) grupos[g] = [];
+    grupos[g].push(j);
+  }
+
+  for (var g in grupos) {
+    html = html +
+      '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;' +
+           'letter-spacing:.5px;margin:10px 0 6px;padding:4px 0;border-bottom:1px solid #f1f5f9">' +
+        'Grupo ' + g + ' · ' + (grupos[g][0].pais || "") +
+      '</div>';
+
+    for (var k = 0; k < grupos[g].length; k++) {
+      var jug     = grupos[g][k];
+      var marcado = seleccionadosModal.indexOf(String(jug.id_jugador)) !== -1;
+      var flag    = flagImg(jug.bandera || "");
+      html = html +
+        '<div class="jug-select-fila" onclick="toggleJugador(\'' + jug.id_jugador + '\')">' +
+          '<div class="jug-sel-check ' + (marcado ? "marcado" : "") + '" id="chk-' + jug.id_jugador + '">' +
+            (marcado ? "✓" : "") +
+          '</div>' +
+          '<div class="jug-sel-flag">' + flag + '</div>' +
+          '<div style="flex:1">' +
+            '<div class="jug-sel-nombre">' + jug.nombre_completo + '</div>' +
+            '<div class="jug-sel-meta">' + (jug.posicion || "Jugador") + ' · N°' + (jug.numero_camiseta || "—") + '</div>' +
+          '</div>' +
+        '</div>';
+    }
+  }
+
+  document.getElementById("modal-ref-body").innerHTML = html;
+}
+
+function toggleJugador(idJugador) {
+  var idx = seleccionadosModal.indexOf(String(idJugador));
+  if (idx !== -1) {
+    seleccionadosModal.splice(idx, 1);
+  } else {
+    if (seleccionadosModal.length >= 3) {
+      alert("Máximo 3 refuerzos por equipo.");
+      return;
+    }
+    seleccionadosModal.push(String(idJugador));
+  }
+  var chk = document.getElementById("chk-" + idJugador);
+  if (chk) {
+    var marcado = seleccionadosModal.indexOf(String(idJugador)) !== -1;
+    chk.className = "jug-sel-check" + (marcado ? " marcado" : "");
+    chk.textContent = marcado ? "✓" : "";
+  }
+}
+window.toggleJugador = toggleJugador;
+
+function confirmarRefuerzos() {
+  if (!modalCtx.idRep) return;
+
+  var btn = document.querySelector("#modal-refuerzos .btn-modal-ok");
+  btn.textContent = "Guardando...";
+  btn.disabled    = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.textContent = "Confirmar refuerzos";
+      btn.disabled    = false;
+      cerrarModal();
+      if (res.ok) {
+        cargarResumen();
+      } else {
+        alert("Error: " + res.mensaje);
+      }
+    })
+    .withFailureHandler(function() {
+      btn.textContent = "Confirmar refuerzos";
+      btn.disabled    = false;
+      alert("Error de conexión.");
+    })
+    .actualizarRefuerzos(modalCtx.idRep, modalCtx.lado, seleccionadosModal, window.getAdminPIN ? window.getAdminPIN() : "");
+}
+window.confirmarRefuerzos = confirmarRefuerzos;
+
+function quitarRefuerzo(idRep, lado, idJugador) {
+  var datos = buscarPartidoLocal(idRep);
+  if (!datos) return;
+  var refActuales = lado === "a" ? datos.equipo_a.refuerzos : datos.equipo_b.refuerzos;
+  var nuevos = [];
+  for (var i = 0; i < (refActuales || []).length; i++) {
+    if (String(refActuales[i].id_jugador) !== String(idJugador)) {
+      nuevos.push(String(refActuales[i].id_jugador));
+    }
+  }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.ok) cargarResumen();
+      else alert("Error: " + res.mensaje);
+    })
+    .withFailureHandler(function() { alert("Error de conexión."); })
+    .actualizarRefuerzos(idRep, lado, nuevos);
+}
+window.quitarRefuerzo = quitarRefuerzo;
+
+function cerrarModal() {
+  document.getElementById("modal-refuerzos").classList.remove("visible");
+}
+window.cerrarModal = cerrarModal;
+
+document.getElementById("modal-refuerzos").addEventListener("click", function(e) {
+  if (e.target === this) cerrarModal();
+});
+
+// ── GUARDAR RESULTADO ──
+function guardarResultado(idRep) {
+  var gl  = parseInt(document.getElementById("gl-" + idRep).value) || 0;
+  var gv  = parseInt(document.getElementById("gv-" + idRep).value) || 0;
+  var obs = document.getElementById("obs-" + idRep).value.trim();
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.ok) {
+        mostrarGuardado(idRep);
+        setTimeout(cargarResumen, 600);
+      } else {
+        alert("Error: " + res.mensaje);
+      }
+    })
+    .withFailureHandler(function() { alert("Error de conexión."); })
+    .registrarResultadoRepechaje(idRep, gl, gv, obs, window.getAdminPIN ? window.getAdminPIN() : "");
+}
+window.guardarResultado = guardarResultado;
+
+// ── GUARDAR SOLO OBSERVACIONES ──
+function guardarObservaciones(idRep) {
+  var obs = document.getElementById("obs-" + idRep).value.trim();
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.ok) { mostrarGuardado(idRep); }
+      else { alert("Error: " + res.mensaje); }
+    })
+    .withFailureHandler(function() { alert("Error de conexión."); })
+    .actualizarObservacionesRepechaje(idRep, obs);
+}
+window.guardarObservaciones = guardarObservaciones;
+
+function mostrarGuardado(idRep) {
+  var msg = document.getElementById("msg-" + idRep);
+  if (msg) {
+    msg.classList.add("visible");
+    setTimeout(function() { msg.classList.remove("visible"); }, 2500);
+  }
+}
+
+// ── GENERAR ESTRUCTURA ──
+function generarEstructura() {
+  var fecha = document.getElementById("rep-fecha").value;
+  var hora  = document.getElementById("rep-hora").value;
+  var msg   = document.getElementById("rep-gen-msg");
+  var btn   = document.getElementById("btn-generar");
+
+  btn.disabled    = true;
+  btn.textContent = "Generando...";
+  msg.className   = "rep-gen-msg";
+  msg.textContent = "";
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled    = false;
+      btn.textContent = "\uD83C\uDFC6 Generar Finales (4v5 + 6v7)";
+      if (res.ok) {
+        msg.className   = "rep-gen-msg msg-ok";
+        msg.textContent = "\u2713 " + res.mensaje;
+        if (res.datos && res.datos.detalle) {
+          msg.textContent += " | " + res.datos.detalle.join(" \u2022 ");
+        }
+        cargarResumen();
+      } else {
+        msg.className   = "rep-gen-msg msg-err";
+        msg.textContent = "Error: " + res.mensaje;
+      }
+    })
+    .withFailureHandler(function() {
+      btn.disabled    = false;
+      btn.textContent = "\uD83C\uDFC6 Generar Finales (4v5 + 6v7)";
+      msg.className   = "rep-gen-msg msg-err";
+      msg.textContent = "Error de conexi\xF3n.";
+    })
+    .generarEstructuraRepechaje(fecha, hora, window.getAdminPIN ? window.getAdminPIN() : "");
+}
+window.generarEstructura = generarEstructura;
+
+// ── CALENDARIO ──
+window.generarCalendarioAdm = function() {
+  var panel = document.getElementById("panel-calendario");
+  panel.style.display = panel.style.display === "none" ? "block" : "none";
+};
+
+window.ejecutarCalendario = function() {
+  var fecha = document.getElementById("cal-fecha").value;
+  var hora1 = document.getElementById("cal-hora1").value || "13:00";
+  var hora2 = document.getElementById("cal-hora2").value || "14:30";
+  var msg   = document.getElementById("cal-msg");
+
+  if (!fecha) { msg.style.color="#c0392b"; msg.textContent="Selecciona una fecha de inicio."; return; }
+
+  msg.style.color="#94a3b8"; msg.textContent="Distribuyendo partidos...";
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.ok) {
+        msg.style.color="#1a7a4a";
+        msg.textContent = "\u2713 " + res.datos.partidos_programados + " partidos programados en " +
+                          res.datos.dias_utilizados + " d\xEDas. Fin estimado: " + res.datos.fecha_estimada_fin;
+        setTimeout(function(){ document.getElementById("panel-calendario").style.display="none"; }, 2500);
+      } else {
+        msg.style.color="#c0392b";
+        msg.textContent = "Error: " + res.mensaje;
+      }
+    })
+    .withFailureHandler(function() {
+      msg.style.color="#c0392b"; msg.textContent="Error de conexi\xF3n.";
+    })
+    .generarCalendario(fecha, hora1, hora2, [], window.getAdminPIN ? window.getAdminPIN() : "");
+};
+
+// ── HELPERS ──
+function buscarPartidoLocal(idRep) {
+  for (var i = 0; i < resumenData.length; i++) {
+    if (String(resumenData[i].id_repechaje) === String(idRep)) return resumenData[i];
+  }
+  return null;
+}
+
+/* old flagImg emoji removed */
+
+// ── INICIALIZAR ──
+cargarResumen();
+
+})();
+</script>
+</div>

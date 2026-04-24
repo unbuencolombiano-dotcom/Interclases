@@ -1,0 +1,476 @@
+<!-- ============================================================
+     Modulo_Premios.html v3 — Premiacion del Torneo
+     Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca
+     NUEVAS CATEGORIAS: Final Especial 4v5, Super Final 6v7, Barras, Presentacion
+     ============================================================ -->
+<div id="modulo-premios">
+<style>
+#modulo-premios { font-family:'Plus Jakarta Sans',sans-serif; max-width:920px; margin:0 auto; padding:0 0 80px; }
+.pr-header { background:linear-gradient(135deg,#0a0e1a 0%,#1a3a0a 50%,#0a0e1a 100%); border-radius:18px; padding:28px; margin-bottom:20px; color:#fff; text-align:center; position:relative; overflow:hidden; }
+.pr-header::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 0%,rgba(201,162,39,.18) 0%,transparent 70%); }
+.pr-header h2 { font-family:'Syne',sans-serif; font-size:22px; font-weight:900; margin:0 0 4px; position:relative; }
+.pr-header p  { font-size:13px; color:rgba(255,255,255,.6); margin:0; position:relative; }
+.pr-trofeo { font-size:52px; margin-bottom:10px; position:relative; display:inline-block; animation:flotar 2s ease-in-out infinite; }
+@keyframes flotar { 0%,100%{transform:translateY(0) rotate(-3deg);} 50%{transform:translateY(-8px) rotate(3deg);} }
+
+.pr-tabs { display:flex; gap:5px; margin-bottom:20px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:5px; flex-wrap:wrap; }
+.pr-tab { flex:1; min-width:80px; padding:9px 6px; border-radius:10px; border:none; background:transparent; font-size:11px; font-weight:600; color:#64748b; cursor:pointer; text-align:center; font-family:'Plus Jakarta Sans',sans-serif; transition:all .2s; white-space:nowrap; }
+.pr-tab:hover  { background:#f1f5f9; color:#0d1117; }
+.pr-tab.activo { background:#c9a227; color:#0a0e1a; }
+
+.pr-seccion { background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:14px; }
+.pr-seccion-head { padding:11px 16px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #f1f5f9; background:#fafbff; }
+.pr-seccion-titulo { font-size:13px; font-weight:700; color:#0047AB; }
+.pr-seccion-count  { font-size:10px; color:#94a3b8; margin-left:4px; }
+
+.premio-item { padding:13px 16px; border-bottom:1px solid #f8fafc; display:flex; align-items:flex-start; gap:11px; }
+.premio-item:last-child { border-bottom:none; }
+.premio-item:hover { background:#fafafa; }
+.pi-badge { width:34px; height:34px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:17px; }
+.ico-oro    { background:linear-gradient(135deg,#ffd700,#c9a227); }
+.ico-plata  { background:linear-gradient(135deg,#e8e8e8,#94a3b8); }
+.ico-bronce { background:linear-gradient(135deg,#cd7f32,#a0522d); }
+.ico-azul   { background:#e8f0fb; }
+.ico-verde  { background:#e6f4ed; }
+.ico-rojo   { background:#fee2e2; }
+.ico-morado { background:#f3e8ff; }
+.ico-naranja{ background:#fff7ed; }
+
+.pi-info { flex:1; min-width:0; }
+.pi-cat  { font-size:13px; font-weight:700; color:#0d1117; }
+.pi-desc { font-size:11px; color:#64748b; margin-top:2px; line-height:1.4; }
+.pi-monto{ font-size:11px; color:#1a7a4a; font-weight:600; margin-top:3px; }
+.pi-estado { font-size:10px; padding:2px 8px; border-radius:8px; font-weight:600; white-space:nowrap; flex-shrink:0; align-self:flex-start; margin-top:2px; }
+.pi-asignado  { background:#fdf6e3; color:#92400e; }
+.pi-pendiente { background:#f1f5f9; color:#94a3b8; }
+.pi-nuevo     { background:#e8f0fb; color:#0047AB; }
+
+.pi-ganador { background:#fdf6e3; border:1px solid rgba(201,162,39,.3); border-radius:9px; padding:7px 11px; margin-top:6px; display:flex; align-items:center; gap:8px; }
+.pi-ganador-flag   { font-size:18px; }
+.pi-ganador-nombre { font-size:12px; font-weight:700; color:#0a0e1a; }
+.pi-ganador-grupo  { font-size:10px; color:#92400e; }
+
+.pi-form { margin-top:8px; padding:10px 12px; background:#f8fafc; border-radius:10px; display:none; flex-direction:column; gap:8px; }
+.pi-form.visible { display:flex; }
+.pi-form-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+@media(max-width:540px){ .pi-form-row { grid-template-columns:1fr; } }
+.pi-form label { font-size:10px; font-weight:600; color:#475569; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; display:block; }
+.pi-form input,.pi-form select { width:100%; padding:7px 10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:12px; font-family:'Plus Jakarta Sans',sans-serif; box-sizing:border-box; transition:border-color .2s; }
+.pi-form input:focus,.pi-form select:focus { outline:none; border-color:#c9a227; }
+.pi-form-btns { display:flex; gap:8px; align-items:center; }
+.btn-guardar-premio { padding:7px 16px; border:none; border-radius:8px; background:#c9a227; color:#0a0e1a; font-size:12px; font-weight:700; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; }
+.btn-guardar-premio:hover { background:#b8911f; }
+.btn-asignar-toggle { padding:5px 11px; border:1.5px solid #e2e8f0; border-radius:8px; background:#fff; color:#475569; font-size:11px; font-weight:600; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:all .2s; white-space:nowrap; }
+.btn-asignar-toggle:hover { border-color:#c9a227; color:#c9a227; }
+.pr-msg { font-size:11px; font-weight:600; }
+.pr-msg.ok  { color:#1a7a4a; }
+.pr-msg.err { color:#c0392b; }
+
+.camp-general { background:linear-gradient(135deg,#0a0e1a 0%,#1a3a0a 100%); border-radius:16px; padding:28px; text-align:center; margin-bottom:16px; position:relative; overflow:hidden; }
+.camp-general::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 0%,rgba(201,162,39,.2) 0%,transparent 60%); }
+.camp-titulo  { font-size:12px; font-weight:700; color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; position:relative; }
+.camp-trofeo  { font-size:56px; margin-bottom:10px; position:relative; }
+.camp-pais    { font-family:'Syne',sans-serif; font-size:28px; font-weight:900; color:#c9a227; position:relative; }
+.camp-grupo   { font-size:13px; color:rgba(255,255,255,.5); margin-top:4px; position:relative; }
+.camp-pts     { font-size:14px; font-weight:700; color:#c9a227; margin-top:8px; position:relative; }
+
+.form-presel { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-bottom:16px; }
+.form-presel-titulo { font-size:14px; font-weight:700; color:#0d1117; margin-bottom:14px; }
+.pc-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+@media(max-width:560px){ .pc-form-grid { grid-template-columns:1fr; } }
+.pc-form-label { font-size:11px; font-weight:600; color:#475569; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; display:block; }
+.pc-form-input,.pc-form-select { width:100%; padding:9px 12px; border:1.5px solid #e2e8f0; border-radius:9px; font-size:13px; font-family:'Plus Jakarta Sans',sans-serif; box-sizing:border-box; }
+.pc-form-input:focus,.pc-form-select:focus { outline:none; border-color:#c9a227; }
+.btn-asignar { padding:9px 20px; border:none; border-radius:9px; background:#c9a227; color:#0a0e1a; font-size:13px; font-weight:700; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; }
+.btn-asignar:hover { background:#b8911f; }
+.btn-exportar-presel { padding:5px 12px; border:1px solid rgba(255,255,255,.3); border-radius:8px; background:transparent; color:rgba(255,255,255,.8); font-size:11px; font-weight:600; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; }
+.presel-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; }
+.presel-head { background:#0047AB; padding:12px 18px; display:flex; align-items:center; justify-content:space-between; }
+.presel-head-titulo { font-size:14px; font-weight:700; color:#fff; }
+.presel-body { padding:16px 18px; }
+.presel-fila { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+.presel-fila:last-child { border-bottom:none; }
+.presel-flag   { font-size:22px; flex-shrink:0; }
+.presel-nombre { font-size:13px; font-weight:700; color:#0d1117; }
+.presel-grupo  { font-size:11px; color:#94a3b8; margin-top:1px; }
+.presel-obs    { font-size:12px; color:#475569; margin-top:4px; font-style:italic; }
+.presel-pos    { font-size:11px; padding:2px 8px; border-radius:6px; background:#e8f0fb; color:#0047AB; font-weight:600; margin-top:3px; display:inline-block; }
+.cargando { text-align:center; padding:40px; color:#94a3b8; }
+.cargando-spinner { width:28px; height:28px; border:3px solid #e2e8f0; border-top-color:#c9a227; border-radius:50%; animation:girar 1s linear infinite; margin:0 auto 10px; }
+@keyframes girar { to{transform:rotate(360deg);} }
+.sin-datos { text-align:center; padding:32px; color:#94a3b8; font-size:13px; }
+.info-box { background:#e8f0fb; border:1px solid rgba(0,71,171,.2); border-radius:12px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:#0047AB; }
+</style>
+
+<div class="pr-header">
+  <div class="pr-trofeo">&#x1F3C6;</div>
+  <h2>Premiaci&#xF3;n &#x2014; Mundial GABO 2026</h2>
+  <p>Registro oficial de ganadores &middot; I.E. GABO &middot; Cartago, Valle del Cauca</p>
+</div>
+
+<div class="pr-tabs">
+  <button class="pr-tab activo"        onclick="cambiarTab('especiales')" id="tab-especiales">&#x26A1; Finales</button>
+  <button class="pr-tab"        onclick="cambiarTab('extras')"     id="tab-extras">&#x1F389; Extras</button>
+  <button class="pr-tab"        onclick="cambiarTab('campeon')"    id="tab-campeon">&#x1F451; Campe&#xF3;n</button>
+  <button class="pr-tab"        onclick="cambiarTab('presel')"     id="tab-presel">&#x1F3BD; Pre-selecci&#xF3;n</button>
+</div>
+
+<div id="panel-especiales"><div id="especiales-lista"><div class="cargando"><div class="cargando-spinner"></div>Cargando...</div></div></div>
+<div id="panel-extras"     style="display:none"><div id="extras-lista"><div class="cargando"><div class="cargando-spinner"></div>Cargando...</div></div></div>
+<div id="panel-campeon"    style="display:none"><div id="campeon-body"><div class="cargando"><div class="cargando-spinner"></div>Calculando...</div></div></div>
+<div id="panel-presel"     style="display:none">
+  <div class="form-presel">
+    <div class="form-presel-titulo">&#x2795; Agregar jugador a la pre-selecci&#xF3;n</div>
+    <div class="pc-form-grid">
+      <div><div class="pc-form-label">Nombre *</div><input type="text" class="pc-form-input" id="ps-nombre" placeholder="Nombre completo"></div>
+      <div><div class="pc-form-label">Grupo *</div>
+        <select class="pc-form-select" id="ps-grupo">
+          <option value="">&#x2014; Selecciona &#x2014;</option>
+          <option value="301">301</option><option value="302">302</option><option value="303">303</option><option value="304">304</option>
+          <option value="401">401</option><option value="402">402</option><option value="403">403</option><option value="404">404</option>
+          <option value="501">501</option><option value="502">502</option><option value="503">503</option><option value="504">504</option>
+          <option value="601">601</option><option value="602">602</option><option value="603">603</option>
+          <option value="702">702</option><option value="703">703</option><option value="704">704</option>
+        </select>
+      </div>
+      <div><div class="pc-form-label">Posici&#xF3;n</div>
+        <select class="pc-form-select" id="ps-posicion">
+          <option value="Jugador/a">Jugador/a</option><option value="Portero/a">Portero/a</option>
+          <option value="Libero">L&#xED;bero</option><option value="Capitan/a">Capit&#xE1;n/a</option>
+        </select>
+      </div>
+      <div><div class="pc-form-label">G&#xE9;nero</div>
+        <select class="pc-form-select" id="ps-genero">
+          <option value="Masculino">Masculino</option><option value="Femenino">Femenino</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:10px"><div class="pc-form-label">Observaciones</div>
+      <textarea class="pc-form-input" id="ps-obs" rows="2" placeholder="Cualidades destacadas..." style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap">
+      <button class="btn-asignar" onclick="agregarPresel()">Agregar</button>
+      <span class="pr-msg" id="ps-msg"></span>
+    </div>
+  </div>
+  <div class="presel-card">
+    <div class="presel-head">
+      <div class="presel-head-titulo">&#x1F3BD; Pre-seleccionados para Intercolegiados</div>
+      <button class="btn-exportar-presel" onclick="exportarPresel()">Exportar lista</button>
+    </div>
+    <div class="presel-body" id="presel-lista"><div class="cargando"><div class="cargando-spinner"></div>Cargando...</div></div>
+  </div>
+</div>
+
+</div>
+<script>
+(function(){
+
+var tabActivo = "especiales";
+
+// Premios por grado eliminados
+
+var PF = [
+  // ── FINALES ESPECIALES PRIMARIA (4° vs 5°) ──
+  {id:"fe45mf",  cat:"Campe\xF3n Final Especial \u2014 Mini Futsal",          desc:"Camp. 4\xB0 vs Camp. 5\xB0 \xB7 Grado 4 refuerzo m\xE1x 2",    icon:"\u26A1",      cls:"ico-azul",  monto:"Trofeo + Medallas + Cine",             esN:true},
+  {id:"sub45mf", cat:"Subcampe\xF3n Final Especial \u2014 Mini Futsal",        desc:"Camp. 4\xB0 vs Camp. 5\xB0",                                      icon:"\uD83E\uDD48",cls:"ico-plata", monto:"Medallas + Hamburguesa + Papas + Jugo", esN:true},
+  {id:"fe45mv",  cat:"Campe\xF3n Final Especial \u2014 Mini Voleibol",         desc:"Camp. 4\xB0 vs Camp. 5\xB0 \xB7 Grado 4 refuerzo m\xE1x 2",    icon:"\u26A1",      cls:"ico-azul",  monto:"Trofeo + Medallas + Cine",             esN:true},
+  {id:"sub45mv", cat:"Subcampe\xF3n Final Especial \u2014 Mini Voleibol",      desc:"Camp. 4\xB0 vs Camp. 5\xB0",                                      icon:"\uD83E\uDD48",cls:"ico-plata", monto:"Medallas + Hamburguesa + Papas + Jugo", esN:true},
+  // ── GRAN FINAL BACHILLERATO (6° vs 7°) ──
+  {id:"sf67fs",  cat:"Campe\xF3n Gran Final Bachillerato \u2014 Futsal",       desc:"Camp. 6\xB0 vs Camp. 7\xB0 \xB7 Grado 6 refuerzo 1 jug.",       icon:"\uD83D\uDD25",cls:"ico-rojo",  monto:"Trofeo + Medallas + Cine",             esN:true},
+  {id:"sub67fs", cat:"Subcampe\xF3n Gran Final Bachillerato \u2014 Futsal",    desc:"Camp. 6\xB0 vs Camp. 7\xB0",                                      icon:"\uD83E\uDD48",cls:"ico-plata", monto:"Medallas + Hamburguesa + Papas + Jugo", esN:true},
+  {id:"sf67vb",  cat:"Campe\xF3n Gran Final Bachillerato \u2014 Voleibol",     desc:"Camp. 6\xB0 vs Camp. 7\xB0 \xB7 Sin refuerzos",                  icon:"\uD83D\uDD25",cls:"ico-rojo",  monto:"Trofeo + Medallas + Cine",             esN:true},
+  {id:"sub67vb", cat:"Subcampe\xF3n Gran Final Bachillerato \u2014 Voleibol",  desc:"Camp. 6\xB0 vs Camp. 7\xB0",                                      icon:"\uD83E\uDD48",cls:"ico-plata", monto:"Medallas + Hamburguesa + Papas + Jugo", esN:true},
+  // ── GRADO 3° FINAL INDEPENDIENTE ──
+  {id:"c3mf",    cat:"Campe\xF3n Mini Futsal 3\xB0",                          desc:"Grado 3\xB0 \xB7 Final independiente",                           icon:"\uD83E\uDD47",cls:"ico-oro",   monto:"Trofeo + Medallas + Cine",             esN:true},
+  {id:"sub3mf",  cat:"Subcampe\xF3n Mini Futsal 3\xB0",                       desc:"Grado 3\xB0 \xB7 Final independiente",                           icon:"\uD83E\uDD48",cls:"ico-plata", monto:"Medallas + Hamburguesa + Papas + Jugo", esN:true},
+  {id:"c3mv",    cat:"Campe\xF3n Mini Voleibol 3\xB0",                        desc:"Grado 3\xB0 \xB7 Final independiente",                           icon:"\uD83E\uDD47",cls:"ico-oro",   monto:"Trofeo + Medallas + Cine",             esN:true},
+  {id:"sub3mv",  cat:"Subcampe\xF3n Mini Voleibol 3\xB0",                     desc:"Grado 3\xB0 \xB7 Final independiente",                           icon:"\uD83E\uDD48",cls:"ico-plata", monto:"Medallas + Hamburguesa + Papas + Jugo", esN:true},
+  // ── 3er PUESTO FUTSAL — Juego Limpio (menor puntos negativos/tarjetas) ──
+  {id:"tp_fs3",  cat:"3er Puesto Futsal 3\xB0 \u2014 Juego Limpio",           desc:"Partido de 3\xB0 puesto \xB7 Desempate: menor tarjetas/puntos negativos", icon:"\uD83E\uDD1D",cls:"ico-verde",  monto:"Bono $100.000",esN:true},
+  {id:"tp_fs45", cat:"3er Puesto Futsal 4\xB0\u20115\xB0 \u2014 Juego Limpio",desc:"Sin partido \xB7 Menor puntos negativos por tarjetas (excl. finalistas)",  icon:"\uD83E\uDD1D",cls:"ico-verde",  monto:"Bono $100.000",esN:true},
+  {id:"tp_fs67", cat:"3er Puesto Futsal 6\xB0\u20117\xB0 \u2014 Juego Limpio",desc:"Sin partido \xB7 Menor puntos negativos por tarjetas (excl. finalistas)",  icon:"\uD83E\uDD1D",cls:"ico-verde",  monto:"Bono $100.000",esN:true},
+  // ── 3er PUESTO VOLEIBOL — Mayor puntos realizados ──
+  {id:"tp_vb3",  cat:"3er Puesto Voleibol 3\xB0 \u2014 Puntos Realizados",    desc:"Sin partido \xB7 Mayor cantidad de puntos a favor en el torneo",           icon:"\uD83C\uDFC5",cls:"ico-morado", monto:"Bono $100.000",esN:true},
+  {id:"tp_vb45", cat:"3er Puesto Voleibol 4\xB0\u20115\xB0 \u2014 Puntos Realizados",desc:"Sin partido \xB7 Mayor puntos a favor (excl. finalistas)",          icon:"\uD83C\uDFC5",cls:"ico-morado", monto:"Bono $100.000",esN:true},
+  {id:"tp_vb67", cat:"3er Puesto Voleibol 6\xB0\u20117\xB0 \u2014 Puntos Realizados",desc:"Sin partido \xB7 Mayor puntos a favor (excl. finalistas)",          icon:"\uD83C\uDFC5",cls:"ico-morado", monto:"Bono $100.000",esN:true}
+];
+
+var PE = [
+  {id:"barra1", cat:"Mejor Barra \u2014 1er Puesto",desc:"La hinchada m\xE1s animada y creativa del torneo",icon:"\uD83D\uDCE3",cls:"ico-oro",    monto:"$250.000",esN:true},
+  {id:"barra2", cat:"Mejor Barra \u2014 2do Puesto",desc:"Segunda mejor barra del torneo",                 icon:"\uD83D\uDCE3",cls:"ico-plata",  monto:"$150.000",esN:true},
+  {id:"pres",   cat:"Mejor Presentaci\xF3n",      desc:"Delegaci\xF3n con la mejor presentaci\xF3n en apertura",icon:"\uD83C\uDFAD",cls:"ico-morado", monto:"$100.000",esN:true}
+];
+
+var TODOS = {};
+[].concat(PF,PE).forEach(function(d){ TODOS[d.id]=d; });
+var premiosReg = {};
+var equiposList = [];
+var preselList  = [];
+
+function cambiarTab(tab) {
+  tabActivo = tab;
+  ["especiales","extras","campeon","presel"].forEach(function(t){
+    document.getElementById("tab-"+t).className       = "pr-tab"+(t===tab?" activo":"");
+    document.getElementById("panel-"+t).style.display = t===tab?"block":"none";
+  });
+  if(tab==="especiales") cargarEspeciales();
+  if(tab==="extras")     cargarExtras();
+  if(tab==="campeon")    cargarCampeon();
+  if(tab==="presel")     cargarPresel();
+}
+window.cambiarTab = cambiarTab;
+
+
+function cargarEspeciales() {
+  var cont = document.getElementById("especiales-lista");
+  cont.innerHTML = '<div class="info-box">'+
+    '<strong>Finales inter-grados:</strong> Se generan autom\xE1ticamente al terminar las fases regulares. '+
+    'Grado 4 puede reforzarse con m\xE1x 2 jugadores. Grado 6 puede reforzarse con 1 jugador para la Super Final.<br><br>'+
+    '<strong>3er Puesto Futsal (todas las categor\xEDas):</strong> Juego Limpio \u2014 menor puntos negativos por tarjetas. '+
+    'Grado 3\xB0 s\xED juega partido, pero el desempate es por Juego Limpio.<br>'+
+    '<strong>3er Puesto Voleibol (todas las categor\xEDas):</strong> Mayor cantidad de puntos realizados (a favor) en el torneo.'+
+  '</div>';
+  var tmp = document.createElement("div");
+  renderGrupo(tmp,[
+    // PF indices: 0-3 = Final Especial 4v5 (MF camp+sub, MV camp+sub)
+    {lbl:"Final Especial Primaria \u2014 4\xB0 vs 5\xB0",       defs:PF.slice(0,4)},
+    // 4-7 = Gran Final Bach 6v7 (FS camp+sub, VB camp+sub)
+    {lbl:"Gran Final Bachillerato \u2014 6\xB0 vs 7\xB0",       defs:PF.slice(4,8)},
+    // 8-11 = Grado 3° (MF camp+sub, MV camp+sub)
+    {lbl:"Grado 3\xB0 \u2014 Final Independiente",              defs:PF.slice(8,12)},
+    // 12-14 = 3er Puesto Futsal (3°, 4°-5°, 6°-7°)
+    {lbl:"3er Puesto Futsal \u2014 Juego Limpio (por categor\xEDa)", defs:PF.slice(12,15)},
+    // 15-17 = 3er Puesto Voleibol (3°, 4°-5°, 6°-7°)
+    {lbl:"3er Puesto Voleibol \u2014 Mayor Puntos Realizados (por categor\xEDa)", defs:PF.slice(15,18)}
+  ]);
+  cont.appendChild(tmp);
+
+  // Panel de cálculo de 3er puesto — nueva estructura por categoría
+  var panelCalc = document.createElement("div");
+  panelCalc.className="pr-seccion"; panelCalc.style.marginTop="14px";
+  panelCalc.innerHTML=
+    '<div class="pr-seccion-head"><span class="pr-seccion-titulo">\uD83E\uDD1D Calcular 3er Puesto por Categor\xEDa</span></div>'+
+    '<div style="padding:14px 16px;">'+
+      '<div style="background:#fdf6e3;border:1px solid rgba(201,162,39,.2);border-radius:8px;padding:10px 12px;font-size:11px;color:#92400e;margin-bottom:12px;line-height:1.6;">'+
+        '\uD83E\uDD1D <strong>Futsal (todas las categor\xEDas):</strong> Juego Limpio \u2014 menor puntos negativos/tarjetas.<br>'+
+        '\uD83C\uDFC5 <strong>Voleibol (todas las categor\xEDas):</strong> Mayor puntos realizados (a favor) en el torneo.<br>'+
+        '\uD83C\uDFC1 <strong>Grado 3\xB0 Futsal:</strong> S\xED juega partido, desempate por Juego Limpio.'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;flex-wrap:wrap;">'+
+        '<div>'+
+          '<label style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;">Categor\xEDa</label>'+
+          '<select id="tp-cat" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;">'+
+            '<option value="3">Grado 3\xB0 (independiente)</option>'+
+            '<option value="45">Grados 4\xB0 y 5\xB0 (Final Especial Primaria)</option>'+
+            '<option value="67">Grados 6\xB0 y 7\xB0 (Gran Final Bachillerato)</option>'+
+          '</select>'+
+        '</div>'+
+        '<div>'+
+          '<label style="font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px;">Deporte</label>'+
+          '<select id="tp-deporte" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;">'+
+            '<option value="Mini Futsal">Mini Futsal (3\xB0 y 4\xB0-5\xB0)</option>'+
+            '<option value="Mini Voleibol">Mini Voleibol (3\xB0 y 4\xB0-5\xB0)</option>'+
+            '<option value="Futsal">Futsal (6\xB0-7\xB0)</option>'+
+            '<option value="Voleibol">Voleibol (6\xB0-7\xB0)</option>'+
+          '</select>'+
+        '</div>'+
+        '<button onclick="calcularTercerPuestoUI()" style="padding:9px 18px;border:none;border-radius:8px;background:#c9a227;color:#0a0e1a;font-size:12px;font-weight:700;cursor:pointer;">Calcular</button>'+
+      '</div>'+
+      '<div id="tp-resultado" style="margin-top:14px;"></div>'+
+    '</div>';
+  cont.appendChild(panelCalc);
+}
+
+window.calcularTercerPuestoUI = function() {
+  var cat     = document.getElementById("tp-cat").value;
+  var deporte = document.getElementById("tp-deporte").value;
+  var res     = document.getElementById("tp-resultado");
+  var esFutsal  = deporte.indexOf("Futsal")   !== -1;
+  var esVoleibol= deporte.indexOf("Voleibol") !== -1;
+
+  var catLabel = cat==="3" ? "Grado 3\xB0" : cat==="45" ? "Grados 4\xB0-5\xB0" : "Grados 6\xB0-7\xB0";
+
+  res.innerHTML='<div class="cargando"><div class="cargando-spinner"></div>Calculando '+catLabel+' \xB7 '+deporte+'...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r && r.ok && r.datos){
+        var d = r.datos;
+        var criterioIcon = esFutsal ? "\uD83E\uDD1D" : "\uD83C\uDFC5";
+        var critColor    = esFutsal ? "#0f6e56" : "#6b21a8";
+        var bgColor      = esFutsal ? "#e6f4ed" : "#f3e8ff";
+        var bdColor      = esFutsal ? "rgba(26,122,74,.3)" : "rgba(147,51,234,.3)";
+
+        if(d.tercero){
+          var t = d.tercero;
+          var notaPartido = (cat==="3" && esFutsal && d.juega_partido)
+            ? '<div style="font-size:10px;color:#92400e;margin-top:4px;background:#fef3c7;padding:4px 8px;border-radius:6px;">'+
+                '\uD83C\uDFC1 Este grado s\xED juega partido. Criterio aplica en empate.</div>'
+            : '';
+          res.innerHTML=
+            '<div style="background:'+bgColor+';border:1px solid '+bdColor+';border-radius:10px;padding:12px 14px;">'+
+              '<div style="font-size:11px;font-weight:700;color:'+critColor+';margin-bottom:4px;">'+
+                criterioIcon+' 3er Puesto \u2014 '+catLabel+' \xB7 '+deporte+
+              '</div>'+
+              '<div style="font-size:16px;font-weight:800;color:#0d1117;">'+(t.pais||t.grupo||t.id_equipo)+'</div>'+
+              '<div style="font-size:11px;color:#475569;margin-top:3px;">Grupo '+t.grupo+' \xB7 '+d.criterio+'</div>'+
+              (t.puntos_neg!==undefined?'<div style="font-size:11px;color:#475569;">\uD83D\uDEA8 Puntos negativos: '+t.puntos_neg+'</div>':'')+
+              (t.gf!==undefined?'<div style="font-size:11px;color:#475569;">\u26A1 Puntos realizados: '+t.gf+'</div>':'')+
+              notaPartido+
+            '</div>';
+        } else {
+          res.innerHTML='<div style="color:#c0392b;font-size:12px;padding:8px;">'+(r.mensaje||"Sin datos suficientes.")+'</div>';
+        }
+      } else {
+        res.innerHTML='<div style="color:#c0392b;font-size:12px;padding:8px;">'+(r&&r.mensaje?r.mensaje:"Error calculando.")+'</div>';
+      }
+    })
+    .withFailureHandler(function(){
+      res.innerHTML='<div style="color:#c0392b;font-size:12px;padding:8px;">Error de conexi\xF3n.</div>';
+    })
+    .resolverTercerPuestoCategoria(cat, deporte);
+};
+window.calcularTercerPuestoUI = window.calcularTercerPuestoUI;
+
+function cargarExtras() {
+  var cont = document.getElementById("extras-lista");
+  renderGrupo(cont,[
+    {lbl:"Premios Individuales",     defs:PE.slice(0,5)},
+    {lbl:"Barras y Presentaci\xF3n", defs:PE.slice(5)}
+  ]);
+}
+
+function renderGrupo(cont, secciones) {
+  var html = "";
+  secciones.forEach(function(s){
+    var asg = s.defs.filter(function(d){ return !!premiosReg[d.cat]; }).length;
+    html += '<div class="pr-seccion"><div class="pr-seccion-head"><div class="pr-seccion-titulo">'+s.lbl+'</div><div class="pr-seccion-count">'+asg+'/'+s.defs.length+' asignados</div></div><div>';
+    s.defs.forEach(function(def){
+      var reg = premiosReg[def.cat];
+      var ganadorH = reg?('<div class="pi-ganador"><div class="pi-ganador-flag">'+flag(reg.bandera||"")+'</div><div><div class="pi-ganador-nombre">'+(reg.nombre_ganador||"")+'</div><div class="pi-ganador-grupo">Grupo '+(reg.grupo||"\u2014")+(reg.pais?" \xB7 "+reg.pais:"")+'</div></div></div>'):"";
+      var eqOpts = equiposList.map(function(e){ return '<option value="'+e.id_equipo+'">'+e.grupo+(e.pais?" \u2014 "+e.pais:"")+" ("+e.deporte+")"+'</option>'; }).join("");
+      html +=
+        '<div class="premio-item">'+
+          '<div class="pi-badge '+def.cls+'">'+def.icon+'</div>'+
+          '<div class="pi-info">'+
+            '<div class="pi-cat">'+def.cat+'</div>'+
+            '<div class="pi-desc">'+def.desc+'</div>'+
+            '<div class="pi-monto">'+def.monto+'</div>'+
+            ganadorH+
+            '<div class="pi-form" id="pf-'+def.id+'">'+
+              '<div class="pi-form-row">'+
+                '<div><label>Ganador/a *</label><input type="text" id="gn-'+def.id+'" placeholder="Nombre completo" value="'+(reg?reg.nombre_ganador||"":"")+'" ></div>'+
+                '<div><label>Equipo</label><select id="ge-'+def.id+'"><option value="">&#x2014; Selecciona &#x2014;</option>'+eqOpts+'</select></div>'+
+              '</div>'+
+              '<div><label>Observaciones</label><input type="text" id="go-'+def.id+'" value="'+(reg?reg.observaciones||"":"")+'"></div>'+
+              '<div class="pi-form-btns">'+
+                '<button class="btn-guardar-premio" onclick="guardarPremio(\''+def.id+'\',\''+def.cat+'\')">Guardar</button>'+
+                '<span class="pr-msg" id="pm-'+def.id+'"></span>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+          '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">'+
+            (reg?'<span class="pi-estado pi-asignado">Asignado</span>':(def.esN?'<span class="pi-estado pi-nuevo">Nuevo</span>':'<span class="pi-estado pi-pendiente">Pendiente</span>'))+
+            '<button class="btn-asignar-toggle" data-id="'+def.id+'">'+(reg?"Editar":"Asignar")+'</button>'+
+          '</div>'+
+        '</div>';
+    });
+    html += '</div></div>';
+  });
+  if(typeof cont.innerHTML !== "undefined") cont.innerHTML = (cont.innerHTML||"") + html;
+  // Bind toggle
+  cont.querySelectorAll(".btn-asignar-toggle").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var f = document.getElementById("pf-"+btn.dataset.id);
+      if(f) f.classList.toggle("visible");
+    });
+  });
+}
+
+/* flag() removed -> use flagImg */
+
+function guardarPremio(id,cat){
+  var nombre=document.getElementById("gn-"+id).value.trim();
+  var idEq  =document.getElementById("ge-"+id).value;
+  var obs   =document.getElementById("go-"+id).value.trim();
+  var msg   =document.getElementById("pm-"+id);
+  if(!nombre){msg.className="pr-msg err";msg.textContent="El nombre es requerido.";return;}
+  var gr="",pa="",ba="";
+  equiposList.forEach(function(e){ if(String(e.id_equipo)===String(idEq)){gr=e.grupo;pa=e.pais;ba=e.bandera_codigo;} });
+  msg.className="pr-msg";msg.textContent="Guardando...";
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r.ok){msg.className="pr-msg ok";msg.textContent="Guardado";premiosReg[cat]={categoria:cat,nombre_ganador:nombre,grupo:gr,pais:pa,bandera:ba,observaciones:obs};setTimeout(function(){msg.textContent="";},2000);}
+      else{msg.className="pr-msg err";msg.textContent="Error: "+r.mensaje;}
+    })
+    .withFailureHandler(function(){msg.className="pr-msg err";msg.textContent="Error de conexi\xF3n.";})
+    .registrarPremio({pin: window.getAdminPIN ? window.getAdminPIN() : "", categoria:cat,nombre_ganador:nombre,grupo:gr,pais:pa,bandera:ba,observaciones:obs});
+}
+window.guardarPremio = guardarPremio;
+
+function cargarCampeon(){
+  var body=document.getElementById("campeon-body");
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(!r.ok||!r.datos||!r.datos.length){body.innerHTML='<div class="sin-datos">Sin datos a\xFAn.</div>';return;}
+      var l=r.datos[0],fl=flag(l.bandera);
+      var html='<div class="camp-general"><div class="camp-titulo">Campe\xF3n Absoluto</div><div class="camp-trofeo">'+fl+'</div><div class="camp-pais">'+(l.pais||l.grupo)+'</div><div class="camp-grupo">Grupo '+l.grupo+' \xB7 Mayor puntaje acumulado</div><div class="camp-pts">'+(l.puntos||0)+' pts \xB7 '+(l.pj||0)+' PJ</div></div>';
+      html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden"><div style="background:#c9a227;padding:12px 18px;font-size:13px;font-weight:700;color:#0a0e1a">Clasificaci\xF3n Final</div><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+["#","Equipo","PJ","GF","GC","Pts"].map(function(h,i){return '<th style="padding:8px 14px;background:#fdf6e3;font-size:10px;font-weight:600;color:#92400e;text-align:'+(i<=1?"left":"center")+'">'+h+'</th>';}).join("")+'</tr></thead><tbody>';
+      r.datos.forEach(function(eq,i){
+        html+='<tr style="border-bottom:1px solid #f8fafc;'+(i===0?"background:#fefce8":"")+'"><td style="padding:10px 14px;font-weight:700;color:'+(i===0?"#c9a227":"#94a3b8")+'">'+(i===0?"\uD83D\uDC51":(i+1))+'</td><td style="padding:10px 14px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">'+flag(eq.bandera)+'</span><div><div style="font-weight:600">'+(eq.pais||eq.grupo)+'</div><div style="font-size:11px;color:#94a3b8">Grupo '+eq.grupo+'</div></div></div></td><td style="padding:10px 14px;text-align:center">'+(eq.pj||0)+'</td><td style="padding:10px 14px;text-align:center">'+(eq.gf||0)+'</td><td style="padding:10px 14px;text-align:center">'+(eq.gc||0)+'</td><td style="padding:10px 14px;text-align:center;font-weight:700;color:#0047AB;font-size:15px">'+(eq.puntos||0)+'</td></tr>';
+      });
+      html+='</tbody></table></div>';
+      body.innerHTML=html;
+    })
+    .withFailureHandler(function(){body.innerHTML='<div class="sin-datos">Error.</div>';})
+    .getTablaGeneral();
+}
+
+function cargarPresel(){
+  var cont=document.getElementById("presel-lista");
+  cont.innerHTML='<div class="cargando"><div class="cargando-spinner"></div>Cargando...</div>';
+  google.script.run
+    .withSuccessHandler(function(r){
+      preselList=(r.ok&&r.datos)?r.datos:[];
+      if(!preselList.length){cont.innerHTML='<div class="sin-datos">Sin jugadores a\xFAn.</div>';return;}
+      cont.innerHTML=preselList.map(function(p){
+        return '<div class="presel-fila"><div class="presel-flag">'+flag(p.bandera||"")+'</div><div style="flex:1"><div class="presel-nombre">'+(p.nombre_jugador||"")+'</div><div class="presel-grupo">Grupo '+(p.grupo||"")+" \xB7 "+(p.pais||"")+'</div><span class="presel-pos">'+(p.posicion||"Jugador")+'</span>'+(p.observaciones_docente?'<div class="presel-obs">"'+p.observaciones_docente+'"</div>':"")+'</div></div>';
+      }).join("");
+    })
+    .withFailureHandler(function(){cont.innerHTML='<div class="sin-datos">Error.</div>';})
+    .getPreseleccion();
+}
+
+function agregarPresel(){
+  var nombre=document.getElementById("ps-nombre").value.trim();
+  var grupo =document.getElementById("ps-grupo").value;
+  var pos   =document.getElementById("ps-posicion").value;
+  var gen   =document.getElementById("ps-genero").value;
+  var obs   =document.getElementById("ps-obs").value.trim();
+  var msg   =document.getElementById("ps-msg");
+  if(!nombre||!grupo){msg.className="pr-msg err";msg.textContent="Nombre y grupo requeridos.";return;}
+  msg.className="pr-msg";msg.textContent="Guardando...";
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r.ok){msg.className="pr-msg ok";msg.textContent="Agregado";document.getElementById("ps-nombre").value="";document.getElementById("ps-obs").value="";setTimeout(function(){msg.textContent="";cargarPresel();},1500);}
+      else{msg.className="pr-msg err";msg.textContent="Error: "+r.mensaje;}
+    })
+    .withFailureHandler(function(){msg.className="pr-msg err";msg.textContent="Error de conexi\xF3n.";})
+    .marcarPreseleccion({pin: window.getAdminPIN ? window.getAdminPIN() : "", nombre_jugador:nombre,grupo:grupo,posicion:pos,genero:gen,observaciones_docente:obs});
+}
+window.agregarPresel = agregarPresel;
+
+function exportarPresel(){
+  if(!preselList.length){alert("No hay jugadores.");return;}
+  var t="PRE-SELECCION INTERCOLEGIADOS \u2014 MUNDIAL GABO 2026\nI.E. GABO \xB7 Cartago\n============================\n\n";
+  preselList.forEach(function(p,i){ t+=(i+1)+". "+p.nombre_jugador+" | Grupo "+p.grupo+" | "+p.posicion+(p.observaciones_docente?"\n   Obs: "+p.observaciones_docente:"")+"\n"; });
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([t],{type:"text/plain;charset=utf-8"}));
+  a.download="Preseleccion_GABO_2026.txt";a.click();
+}
+window.exportarPresel = exportarPresel;
+
+cargarEspeciales();
+})();
+</script>

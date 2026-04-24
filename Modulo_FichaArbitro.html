@@ -1,0 +1,832 @@
+<!-- ============================================================
+     Modulo_FichaArbitro.html
+     Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca
+     Funciones:
+       - Seleccionar partido programado
+       - Generar ficha imprimible para el árbitro (A4)
+       - Escanear ficha completada (foto) → Gemini OCR → actualizar BD
+     Solo accesible para admin autenticado.
+     ============================================================ -->
+
+<div id="modulo-ficha">
+<style>
+#modulo-ficha {
+  font-family:'Plus Jakarta Sans',sans-serif;
+  max-width:900px; margin:0 auto; padding:0 0 80px;
+}
+.fa-header {
+  background:linear-gradient(135deg,#0a0e1a 0%,#003380 100%);
+  border-radius:18px; padding:22px 24px; margin-bottom:20px;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:12px;
+}
+.fa-header h2 {
+  font-family:'Syne',sans-serif; font-size:20px; font-weight:700;
+  color:#fff; margin:0 0 3px;
+}
+.fa-header p { font-size:12px; color:rgba(255,255,255,.55); margin:0; }
+.fa-tabs {
+  display:flex; gap:6px; margin-bottom:20px;
+  background:#fff; border:1px solid #e2e8f0;
+  border-radius:14px; padding:6px;
+}
+.fa-tab {
+  flex:1; padding:10px 12px; border-radius:10px; border:none;
+  background:transparent; font-size:13px; font-weight:600;
+  color:#64748b; cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif; transition:all .2s;
+}
+.fa-tab.activo { background:#0047AB; color:#fff; }
+.fa-card {
+  background:#fff; border:1px solid #e2e8f0; border-radius:16px;
+  padding:22px; margin-bottom:14px;
+}
+.fa-titulo { font-size:15px; font-weight:700; color:#0d1117; margin:0 0 16px; display:flex; align-items:center; gap:8px; }
+.fa-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:560px){.fa-grid-2{grid-template-columns:1fr;}}
+.fa-label { font-size:11px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:.6px; display:block; margin-bottom:5px; }
+.fa-select,.fa-input {
+  width:100%; padding:10px 14px; border:1.5px solid #e2e8f0; border-radius:11px;
+  font-size:14px; font-family:'Plus Jakarta Sans',sans-serif; color:#0d1117;
+  background:#fff; box-sizing:border-box;
+}
+.fa-select:focus,.fa-input:focus { outline:none; border-color:#0047AB; }
+.btn-fa {
+  padding:11px 22px; border:none; border-radius:11px;
+  font-size:14px; font-weight:600; cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif; transition:all .2s;
+  display:inline-flex; align-items:center; gap:7px;
+}
+.btn-fa.azul  { background:#0047AB; color:#fff; box-shadow:0 2px 8px rgba(0,71,171,.25); }
+.btn-fa.azul:hover { background:#003380; }
+.btn-fa.verde { background:#1a7a4a; color:#fff; }
+.btn-fa.verde:hover { background:#145c38; }
+.btn-fa:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ── ZONA DE ESCANEO ── */
+.scan-zone {
+  border:2px dashed #cbd5e1; border-radius:14px; padding:36px 20px;
+  text-align:center; cursor:pointer; transition:all .2s; background:#fafbff;
+}
+.scan-zone:hover,.scan-zone.drag-over { border-color:#0047AB; background:#f0f5ff; }
+.scan-zone.tiene-img { border-style:solid; border-color:#1a7a4a; background:#f0faf4; }
+.scan-icon { font-size:36px; margin-bottom:10px; }
+.scan-preview { max-width:100%; max-height:300px; border-radius:10px; margin-top:12px; object-fit:contain; }
+.ocr-resultado {
+  background:#e6f4ed; border:1px solid #b6e0c8; border-radius:12px;
+  padding:16px; margin-top:14px; font-size:13px; color:#1a7a4a; display:none;
+}
+.ocr-alerta {
+  background:#fdf6e3; border:1px solid #fcd34d; border-radius:12px;
+  padding:12px 16px; margin-top:10px; font-size:12px; color:#92400e; display:none;
+}
+.ocr-error {
+  background:#fee2e2; border:1px solid #fca5a5; border-radius:12px;
+  padding:12px 16px; margin-top:10px; font-size:12px; color:#b91c1c; display:none;
+}
+.ocr-spinner {
+  width:36px; height:36px; border:3px solid #e2e8f0; border-top-color:#0047AB;
+  border-radius:50%; animation:girar 1s linear infinite; margin:20px auto; display:none;
+}
+@keyframes girar{to{transform:rotate(360deg);}}
+.ocr-dato-fila { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #d1fae5; font-size:13px; }
+.ocr-dato-fila:last-child { border-bottom:none; }
+.ocr-dato-label { color:#065f46; font-weight:600; }
+.ocr-dato-valor { color:#1a7a4a; }
+
+/* ── PARTIDO SELECTOR ── */
+.partido-chip {
+  display:flex; align-items:center; gap:10px; padding:12px 14px;
+  border:1.5px solid #e2e8f0; border-radius:12px; cursor:pointer;
+  transition:all .15s; background:#fff; margin-bottom:8px;
+}
+.partido-chip:hover { border-color:#0047AB; background:#f0f5ff; }
+.partido-chip.sel   { border-color:#0047AB; background:#e8f0fb; }
+.pc-marcador { font-size:18px; font-weight:800; color:#0d1117; min-width:60px; text-align:center; }
+.pc-meta { flex:1; }
+.pc-titulo { font-size:13px; font-weight:700; color:#0d1117; }
+.pc-sub    { font-size:11px; color:#64748b; margin-top:1px; }
+.pc-badge  { font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; }
+.badge-prog { background:#e8f0fb; color:#0047AB; }
+.badge-live { background:#fee2e2; color:#c0392b; }
+.badge-fin  { background:#e6f4ed; color:#1a7a4a; }
+.cargando { text-align:center; padding:30px; color:#64748b; font-size:13px; }
+.cargando-spinner { width:28px; height:28px; border:3px solid #e2e8f0; border-top-color:#0047AB; border-radius:50%; animation:girar 1s linear infinite; margin:0 auto 12px; }
+</style>
+
+<!-- CABECERA -->
+<div class="fa-header">
+  <div>
+    <h2>📋 Ficha del árbitro</h2>
+    <p>Genera fichas para imprimir · Escanea y actualiza resultados</p>
+  </div>
+  <span style="background:#c9a227;color:#0a0e1a;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px">ADMIN</span>
+</div>
+
+<!-- TABS -->
+<div class="fa-tabs">
+  <button class="fa-tab activo" id="tab-imprimir" onclick="cambiarTabFA('imprimir')">🖨️ Imprimir ficha</button>
+  <button class="fa-tab"        id="tab-escanear" onclick="cambiarTabFA('escanear')">📷 Escanear resultado</button>
+</div>
+
+<!-- ══════════ TAB 1: IMPRIMIR ══════════ -->
+<div id="panel-imprimir">
+  <div class="fa-card">
+    <div class="fa-titulo">📅 Selecciona el partido</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <select class="fa-select" id="fil-grado" onchange="filtrarPartidosFA()" style="max-width:160px">
+        <option value="">Todos los grados</option>
+        <option value="3">Grado 3°</option>
+        <option value="4">Grado 4°</option>
+        <option value="5">Grado 5°</option>
+        <option value="6">Grado 6°</option>
+        <option value="7">Grado 7°</option>
+      </select>
+      <select class="fa-select" id="fil-estado" onchange="filtrarPartidosFA()" style="max-width:160px">
+        <option value="">Todos</option>
+        <option value="Programado" selected>Programados</option>
+        <option value="En juego">En juego</option>
+        <option value="Finalizado">Finalizados</option>
+      </select>
+    </div>
+    <div id="lista-partidos-fa">
+      <div class="cargando"><div class="cargando-spinner"></div>Cargando partidos...</div>
+    </div>
+  </div>
+
+  <div class="fa-card" id="card-generar" style="display:none">
+    <div class="fa-titulo">✅ Partido seleccionado</div>
+    <div id="partido-seleccionado-info" style="font-size:14px;color:#475569;margin-bottom:16px"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn-fa azul" id="btn-print" onclick="generarFicha()">🖨️ Generar ficha para imprimir</button>
+      <button class="btn-fa verde" id="btn-pdf" onclick="descargarFichaPDF()">⬇️ Descargar PDF (Servidor)</button>
+      <div id="fa-spin" style="display:none;margin-left:5px;width:20px;height:20px;border:2px solid #e2e8f0;border-top-color:#0047AB;border-radius:50%;animation:girar 1s linear infinite;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 2: ESCANEAR ══════════ -->
+<div id="panel-escanear" style="display:none">
+  <div class="fa-card">
+    <div class="fa-titulo">🎯 Selecciona el partido a actualizar</div>
+    <div id="lista-partidos-scan">
+      <div class="cargando"><div class="cargando-spinner"></div>Cargando...</div>
+    </div>
+  </div>
+  <div class="fa-card" id="card-scan" style="display:none">
+    <div class="fa-titulo">📷 Sube la foto de la ficha completada</div>
+    <div class="scan-zone" id="scan-dropzone" onclick="document.getElementById('scan-file').click()"
+         ondragover="this.classList.add('drag-over');event.preventDefault()"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="onScanDrop(event)">
+      <div class="scan-icon">📄</div>
+      <div style="font-size:14px;font-weight:700;color:#0d1117;margin-bottom:4px">Toca para subir la foto</div>
+      <div style="font-size:12px;color:#64748b">JPG, PNG o WEBP · Máx. 10MB</div>
+      <img id="scan-preview" class="scan-preview" style="display:none">
+    </div>
+    <input type="file" id="scan-file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="onScanFile(this)">
+
+    <div id="ocr-spinner" class="ocr-spinner"></div>
+    <div id="ocr-status" style="text-align:center;font-size:13px;color:#64748b;margin-top:8px;display:none">
+      🤖 Gemini Vision está leyendo la ficha... (puede tomar 10-20 segundos)
+    </div>
+
+    <div id="ocr-resultado-box" class="ocr-resultado">
+      <div style="font-weight:700;margin-bottom:10px">✅ Ficha leída correctamente</div>
+      <div id="ocr-datos-tabla"></div>
+    </div>
+    <div id="ocr-alerta-box" class="ocr-alerta"></div>
+    <div id="ocr-error-box" class="ocr-error"></div>
+
+    <div id="scan-btns" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;display:none">
+      <button class="btn-fa verde" id="btn-confirmar-scan" onclick="confirmarScan()">✅ Confirmar y actualizar torneo</button>
+      <button class="btn-fa" onclick="resetScan()" style="background:#f1f5f9;color:#475569">🔄 Subir otra foto</button>
+    </div>
+  </div>
+</div>
+
+<!-- FICHA IMPRIMIBLE (oculta, se imprime con window.print) -->
+<div id="ficha-print-area" style="display:none"></div>
+
+<style>
+@media print {
+  body.is-printing-ficha * { visibility: hidden; }
+  body.is-printing-ficha #ficha-print-area, body.is-printing-ficha #ficha-print-area * { visibility: visible; }
+  body.is-printing-ficha #ficha-print-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+  @page { size:A4; margin:8mm; }
+}
+</style>
+
+<script>
+// flagImg global de Shell.html
+
+(function(){
+'use strict';
+
+var partidos      = [];
+var partidoSelImp = null;
+var partidoSelScan= null;
+var imagenB64     = "";
+var imagenMime    = "";
+var datosOCR      = null;
+var tabActiva     = "imprimir";
+
+// ── TABS ──
+window.cambiarTabFA = function(tab){
+  tabActiva = tab;
+  document.getElementById("panel-imprimir").style.display = tab==="imprimir"?"block":"none";
+  document.getElementById("panel-escanear").style.display = tab==="escanear"?"block":"none";
+  document.getElementById("tab-imprimir").className = "fa-tab"+(tab==="imprimir"?" activo":"");
+  document.getElementById("tab-escanear").className = "fa-tab"+(tab==="escanear"?" activo":"");
+};
+
+// ── CARGAR PARTIDOS ──
+function cargarPartidos(){
+  if(typeof google==="undefined"||!google.script){ mostrarPartidosDemo(); return; }
+  
+  var timeoutId = setTimeout(function() {
+      // detener spinner y mostrar error timeout
+      var elems = document.querySelectorAll(".cargando");
+      for (var i = 0; i < elems.length; i++) {
+        elems[i].innerHTML = '<div style="color:#c0392b;padding:20px;text-align:center">❌ Error: La base de datos no respondió en 5 segundos. Revisa tu conexión.</div>';
+      }
+  }, 5000);
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      clearTimeout(timeoutId);
+      if(!res || !res.ok){
+        var errorMsg = res ? res.mensaje : "Respuesta inválida";
+        var elems = document.querySelectorAll(".cargando");
+        for (var i = 0; i < elems.length; i++) {
+          elems[i].innerHTML = '<div style="color:#c0392b;padding:20px;text-align:center">❌ Error: ' + errorMsg + '</div>';
+        }
+        return;
+      }
+      partidos=res.datos;
+      renderListaPartidos("lista-partidos-fa");
+      renderListaPartidos("lista-partidos-scan");
+    })
+    .withFailureHandler(function(err){
+      clearTimeout(timeoutId);
+      var elems = document.querySelectorAll(".cargando");
+      for (var i = 0; i < elems.length; i++) {
+        elems[i].innerHTML = '<div style="color:#c0392b;padding:20px;text-align:center">❌ Fallo de conexión: ' + err + '</div>';
+      }
+    })
+    .getPartidos();
+}
+
+window.filtrarPartidosFA=function(){ renderListaPartidos("lista-partidos-fa"); };
+
+function renderListaPartidos(containerId){
+  var cont  = document.getElementById(containerId);
+  var esScan= containerId.indexOf("scan")!==-1;
+  var estadoFil = esScan?"":((document.getElementById("fil-estado")||{value:""}).value);
+  var gradoFil  = (document.getElementById("fil-grado")||{value:""}).value;
+
+  var filtrados = partidos.filter(function(p){
+    if(gradoFil  && String(p.grado)  !==gradoFil)   return false;
+    if(estadoFil && String(p.estado) !==estadoFil)  return false;
+    if(esScan    && p.estado==="Finalizado")         return true;
+    if(esScan)                                       return true;
+    return true;
+  });
+
+  if(!filtrados.length){
+    cont.innerHTML='<div style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">Sin partidos para el filtro seleccionado.</div>';
+    return;
+  }
+
+  var sel = esScan?partidoSelScan:partidoSelImp;
+  var html="";
+  filtrados.forEach(function(p){
+    var flag_l = bandera(p.bandera_local);
+    var flag_v = bandera(p.bandera_visitante);
+    var estado = p.estado||"";
+    var badgeCls= estado==="Programado"?"badge-prog":estado==="En juego"?"badge-live":"badge-fin";
+    var isSel  = sel&&sel.id_partido===p.id_partido;
+    var marc   = (p.goles_local!==undefined&&p.goles_local!=="")
+                  ? (p.goles_local+" — "+p.goles_visitante) : "VS";
+    html+='<div class="partido-chip'+(isSel?" sel":"")+'" onclick="seleccionarPartido(\''+containerId+'\',\''+p.id_partido+'\')">' +
+      '<div class="pc-marcador">'+marc+'</div>'+
+      '<div class="pc-meta">'+
+        '<div class="pc-titulo">'+flag_l+' '+(p.pais_local||p.grupo_local||'—')+'  vs  '+flag_v+' '+(p.pais_visitante||p.grupo_visitante||'—')+'</div>'+
+        '<div class="pc-sub">Grado '+p.grado+'° · '+p.deporte+' · '+(p.fase||'')+(p.fecha?' · '+p.fecha:'')+' '+(p.hora||'')+'</div>'+
+      '</div>'+
+      '<span class="pc-badge '+badgeCls+'">'+estado+'</span>'+
+    '</div>';
+  });
+  cont.innerHTML=html;
+}
+
+window.seleccionarPartido=function(containerId, idPartido){
+  var esScan = containerId.indexOf("scan")!==-1;
+  var p = partidos.find(function(x){return x.id_partido===idPartido;});
+  if(!p) return;
+  if(esScan){
+    partidoSelScan=p;
+    document.getElementById("card-scan").style.display="block";
+    resetScan();
+  } else {
+    partidoSelImp=p;
+    document.getElementById("card-generar").style.display="block";
+    document.getElementById("partido-seleccionado-info").innerHTML=
+      '<strong>'+bandera(p.bandera_local)+' '+(p.pais_local||p.grupo_local)+' vs '+bandera(p.bandera_visitante)+' '+(p.pais_visitante||p.grupo_visitante)+'</strong>'+
+      ' · Grado '+p.grado+'° · '+p.deporte+(p.fecha?' · '+p.fecha:'')+' '+(p.hora||'');
+  }
+  renderListaPartidos(containerId);
+};
+
+// ── GENERAR FICHA IMPRIMIBLE ──
+window.generarFicha=function(){
+  if(!partidoSelImp) return;
+  var pin=window.getAdminPIN?window.getAdminPIN():"";
+  var btnPrint=document.getElementById("btn-print");
+  var btnPdf=document.getElementById("btn-pdf");
+  var spin=document.getElementById("fa-spin");
+  if(btnPrint){btnPrint.disabled=true;btnPrint.textContent="⏳ Generando...";}
+  if(btnPdf) btnPdf.disabled=true;
+  if(spin) spin.style.display="inline-block";
+
+  if(typeof google==="undefined"||!google.script){
+    renderFichaHTML(partidoSelImp, [], [], true, false);
+    if(btnPrint){btnPrint.disabled=false;btnPrint.textContent="🖨️ Generar ficha para imprimir";}
+    if(btnPdf) btnPdf.disabled=false;
+    if(spin) spin.style.display="none";
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(btnPrint){btnPrint.disabled=false;btnPrint.textContent="🖨️ Generar ficha para imprimir";}
+      if(btnPdf) btnPdf.disabled=false;
+      if(spin) spin.style.display="none";
+      
+      if(res&&res.ok&&res.datos){
+        var d=res.datos;
+        renderFichaHTML(d.partido, d.jugadores_local, d.jugadores_visitante, d.es_futsal, d.es_voley, d.capitan_local, d.capitan_visitante);
+      } else {
+        alert("Error: "+(res?res.mensaje:"Sin datos"));
+      }
+    })
+    .withFailureHandler(function(e){
+      console.error(e);
+      if(btnPrint){btnPrint.disabled=false;btnPrint.textContent="🖨️ Generar ficha para imprimir";}
+      if(btnPdf) btnPdf.disabled=false;
+      if(spin) spin.style.display="none";
+      alert("Error de conexión: "+e);
+    })
+    .getFichaPartido(partidoSelImp.id_partido, pin);
+};
+
+// ── DESCARGAR FICHA PDF (SERVIDOR) ──
+window.descargarFichaPDF = function() {
+  if(!partidoSelImp) return;
+  var pin = window.getAdminPIN ? window.getAdminPIN() : "";
+  var btnPrint = document.getElementById("btn-print");
+  var btnPdf = document.getElementById("btn-pdf");
+  var spin = document.getElementById("fa-spin");
+  
+  if(btnPrint) btnPrint.disabled = true;
+  if(btnPdf){btnPdf.disabled=true;btnPdf.textContent="⏳ Descargando...";}
+  if(spin) spin.style.display="inline-block";
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if(btnPrint) btnPrint.disabled = false;
+      if(btnPdf){btnPdf.disabled=false;btnPdf.textContent="⬇️ Descargar PDF (Servidor)";}
+      if(spin) spin.style.display="none";
+      
+      if (res && res.ok && res.datos) {
+        // Ejecutar descarga
+        var link = document.createElement('a');
+        link.href = 'data:application/pdf;base64,' + res.datos.data;
+        link.download = res.datos.nombre;
+        link.click();
+      } else {
+        alert("Error: " + (res ? res.mensaje : "Fallo en generación PDF"));
+      }
+    })
+    .withFailureHandler(function(e) {
+      console.error(e);
+      if(btnPrint) btnPrint.disabled = false;
+      if(btnPdf){btnPdf.disabled=false;btnPdf.textContent="⬇️ Descargar PDF (Servidor)";}
+      if(spin) spin.style.display="none";
+      alert("Error de conexión descargando PDF: " + e);
+    })
+    .generarFichaPDFServer(partidoSelImp.id_partido, pin);
+};
+
+function renderFichaHTML(p, jugLocal, jugVisit, esFutsal, esVoley, capLocal, capVisit){
+  var fl=bandera(p.bandera_local);
+  var fv=bandera(p.bandera_visitante);
+
+  // Filas de jugadores para la tabla de la ficha
+  function filasJugadores(jugs){
+    var h="";
+    var max=Math.max(jugs.length, 12);
+    for(var i=0;i<max;i++){
+      var j=jugs[i]||null;
+      var nom=j?(j.nombre_completo||""):"";
+      var cam=j?(j.numero_camiseta||""):"";
+      var pos=j?(j.posicion||""):"";
+      h+='<tr>'+
+        '<td style="width:36px;text-align:center;font-weight:700">'+cam+'</td>'+
+        '<td style="min-width:160px">'+nom+'</td>'+
+        '<td style="width:80px;text-align:center">'+pos+'</td>'+
+        '<td style="width:32px;text-align:center;border:1px solid #888"></td>'+ // Goles
+        '<td style="width:32px;text-align:center;border:1px solid #888"></td>'+ // TA
+        '<td style="width:32px;text-align:center;border:1px solid #888"></td>'+ // TR
+      '</tr>';
+    }
+    return h;
+  }
+
+  // Sección específica de deporte
+  var secDeporte="";
+  if(esFutsal){
+    secDeporte=
+      '<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px">'+
+      '<tr style="background:#003380;color:#fff">'+
+        '<th style="padding:6px;border:1px solid #ccc">Equipo</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:60px">Goles 1T</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:60px">Goles 2T</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:60px">Total</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:60px">Faltas</th>'+
+      '</tr>'+
+      '<tr><td style="padding:6px;border:1px solid #ccc;font-weight:700">'+fl+' '+(p.pais_local||p.grupo_local)+'</td>'+
+          '<td style="border:1px solid #ccc"></td><td style="border:1px solid #ccc"></td>'+
+          '<td style="border:1px solid #ccc"></td><td style="border:1px solid #ccc"></td></tr>'+
+      '<tr><td style="padding:6px;border:1px solid #ccc;font-weight:700">'+fv+' '+(p.pais_visitante||p.grupo_visitante)+'</td>'+
+          '<td style="border:1px solid #ccc"></td><td style="border:1px solid #ccc"></td>'+
+          '<td style="border:1px solid #ccc"></td><td style="border:1px solid #ccc"></td></tr>'+
+      '</table>';
+  } else {
+    secDeporte=
+      '<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px">'+
+      '<tr style="background:#003380;color:#fff">'+
+        '<th style="padding:6px;border:1px solid #ccc">Equipo</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:55px">Set 1</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:55px">Set 2</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:55px">Set 3</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:55px">Sets</th>'+
+        '<th style="padding:6px;border:1px solid #ccc;width:55px">Pts tot</th>'+
+      '</tr>'+
+      '<tr><td style="padding:6px;border:1px solid #ccc;font-weight:700">'+fl+' '+(p.pais_local||p.grupo_local)+'</td>'+
+          '<td style="border:1px solid #ccc"></td><td style="border:1px solid #ccc"></td>'+
+          '<td style="border:1px solid #ccc"></td><td style="border:1px solid #ccc"></td>'+
+          '<td style="border:1px solid #ccc"></td></tr>'+
+      '<tr><td style="padding:6px;border:1px solid #ccc;font-weight:700">'+fv+' '+(p.pais_visitante||p.grupo_visitante)+'</td>'+
+          '<td style="border:1px solid #ccc"></td><td style="border:1px solid #ccc"></td>'+
+          '<td style="border:1px solid #ccc"></td><td style="border:1px solid #ccc"></td>'+
+          '<td style="border:1px solid #ccc"></td></tr>'+
+      '</table>';
+  }
+
+  var html=
+    '<div style="font-family:Arial,sans-serif;font-size:12px;color:#000;max-width:800px;margin:0 auto;padding:8px">'+
+
+    // ENCABEZADO
+    '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #003380;padding-bottom:8px;margin-bottom:10px">'+
+      '<div>'+
+        '<div style="font-size:18px;font-weight:900;color:#003380">MUNDIAL GABO 2026</div>'+
+        '<div style="font-size:11px;color:#666">I.E. GABO · Cartago, Valle del Cauca · Jornada Tarde</div>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<div style="font-size:11px;color:#666">FICHA OFICIAL DE PARTIDO</div>'+
+        '<div style="font-size:11px;font-weight:700">ID: '+p.id_partido+'</div>'+
+      '</div>'+
+    '</div>'+
+
+    // INFO PARTIDO
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:10px">'+
+    '<tr>'+
+      '<td style="border:1px solid #ccc;padding:6px;font-weight:700;width:50%;text-align:center;font-size:15px">'+
+        fl+' '+(p.pais_local||p.grupo_local)+'<br><span style="font-size:10px;font-weight:400">Grupo '+(p.grupo_local||'—')+'</span>'+
+      '</td>'+
+      '<td style="border:1px solid #ccc;padding:6px;text-align:center;font-size:20px;font-weight:900;color:#003380;width:80px">VS</td>'+
+      '<td style="border:1px solid #ccc;padding:6px;font-weight:700;width:50%;text-align:center;font-size:15px">'+
+        fv+' '+(p.pais_visitante||p.grupo_visitante)+'<br><span style="font-size:10px;font-weight:400">Grupo '+(p.grupo_visitante||'—')+'</span>'+
+      '</td>'+
+    '</tr>'+
+    '<tr>'+
+      '<td colspan="3" style="border:1px solid #ccc;padding:5px;text-align:center;font-size:11px;color:#555">'+
+        'Grado '+p.grado+'° &nbsp;·&nbsp; '+p.deporte+' &nbsp;·&nbsp; '+(p.fase||'')+
+        (p.fecha?' &nbsp;·&nbsp; Fecha: '+p.fecha:'')+' &nbsp; Hora: '+(p.hora||'____')+
+        ' &nbsp;·&nbsp; Árbitro: '+(p.arbitro||'_________________________')+
+      '</td>'+
+    '</tr>'+
+    '</table>'+
+
+    // SECCIÓN RESULTADO
+    secDeporte+
+
+    // TABLAS JUGADORES
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">'+
+
+    '<div>'+
+    '<div style="background:#003380;color:#fff;padding:5px 8px;font-weight:700;font-size:12px;border-radius:4px 4px 0 0">'+
+      fl+' '+(p.pais_local||p.grupo_local)+' — Grupo '+(p.grupo_local||'—')+
+    '</div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+    '<tr style="background:#f0f5ff">'+
+      '<th style="padding:4px;border:1px solid #ccc">N°</th>'+
+      '<th style="padding:4px;border:1px solid #ccc">Nombre</th>'+
+      '<th style="padding:4px;border:1px solid #ccc">Pos</th>'+
+      '<th style="padding:4px;border:1px solid #ccc" title="Goles/Puntos">G</th>'+
+      '<th style="padding:4px;border:1px solid #ccc" title="Tarjeta Amarilla">TA</th>'+
+      '<th style="padding:4px;border:1px solid #ccc" title="Tarjeta Roja">TR</th>'+
+    '</tr>'+
+    filasJugadores(jugLocal)+
+    '</table>'+
+    '</div>'+
+
+    '<div>'+
+    '<div style="background:#003380;color:#fff;padding:5px 8px;font-weight:700;font-size:12px;border-radius:4px 4px 0 0">'+
+      fv+' '+(p.pais_visitante||p.grupo_visitante)+' — Grupo '+(p.grupo_visitante||'—')+
+    '</div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+    '<tr style="background:#f0f5ff">'+
+      '<th style="padding:4px;border:1px solid #ccc">N°</th>'+
+      '<th style="padding:4px;border:1px solid #ccc">Nombre</th>'+
+      '<th style="padding:4px;border:1px solid #ccc">Pos</th>'+
+      '<th style="padding:4px;border:1px solid #ccc">G</th>'+
+      '<th style="padding:4px;border:1px solid #ccc">TA</th>'+
+      '<th style="padding:4px;border:1px solid #ccc">TR</th>'+
+    '</tr>'+
+    filasJugadores(jugVisit)+
+    '</table>'+
+    '</div>'+
+
+    '</div>'+ // fin grid jugadores
+
+    // MARCADOR FINAL + OBSERVACIONES
+    '<table style="width:100%;border-collapse:collapse;margin-top:12px">'+
+    '<tr>'+
+      '<td style="border:1px solid #ccc;padding:8px;width:50%;font-size:13px">'+
+        '<strong>MARCADOR FINAL:</strong><br>'+
+        '<div style="display:flex;justify-content:space-around;font-size:24px;font-weight:900;color:#003380;margin-top:6px">'+
+          '<span>'+(p.pais_local||p.grupo_local)+'</span>'+
+          '<span>____ — ____</span>'+
+          '<span>'+(p.pais_visitante||p.grupo_visitante)+'</span>'+
+        '</div>'+
+      '</td>'+
+      '<td style="border:1px solid #ccc;padding:8px;font-size:12px;vertical-align:top">'+
+        '<strong>Observaciones del árbitro:</strong><br><br><br><br>'+
+      '</td>'+
+    '</tr>'+
+    '</table>'+
+
+    // FIRMAS
+    '<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:11px">'+
+    '<tr>'+
+      '<td style="border:1px solid #ccc;padding:10px 8px;text-align:center;width:33%">'+
+        '<div style="border-bottom:1px solid #000;margin-bottom:4px;height:24px"></div>'+
+        'Firma Árbitro'+
+      '</td>'+
+      '<td style="border:1px solid #ccc;padding:10px 8px;text-align:center;width:33%">'+
+        '<div style="border-bottom:1px solid #000;margin-bottom:4px;height:24px"></div>'+
+        'Capitán Local<br><span style="font-weight:700">' + (capLocal || "___________________") + '</span><br>('+( p.pais_local||p.grupo_local)+')'+
+      '</td>'+
+      '<td style="border:1px solid #ccc;padding:10px 8px;text-align:center;width:33%">'+
+        '<div style="border-bottom:1px solid #000;margin-bottom:4px;height:24px"></div>'+
+        'Capitán Visitante<br><span style="font-weight:700">' + (capVisit || "___________________") + '</span><br>('+(p.pais_visitante||p.grupo_visitante)+')'+
+      '</td>'+
+    '</tr>'+
+    '</table>'+
+
+    // QR visual (solo texto indicativo para IA)
+    '<div style="margin-top:8px;padding:5px;border:1px dashed #ccc;text-align:center;font-size:9px;color:#999">'+
+      'FICHA OCR MUNDIAL GABO 2026 · ID:'+p.id_partido+' · '+p.deporte+' · '+
+      (p.grupo_local||'')+'vs'+(p.grupo_visitante||'')+'</div>'+
+
+    '</div>'; // fin ficha
+
+  var area=document.getElementById("ficha-print-area");
+  area.innerHTML=html;
+
+  setTimeout(function(){
+    document.body.classList.add("is-printing-ficha");
+    window.print();
+    setTimeout(function() { document.body.classList.remove("is-printing-ficha"); }, 500);
+  }, 800);
+}
+
+// ── ESCANEO ──
+window.onScanFile=function(input){
+  if(!input.files||!input.files[0]) return;
+  procesarArchivoScan(input.files[0]);
+};
+window.onScanDrop=function(e){
+  e.preventDefault();
+  document.getElementById("scan-dropzone").classList.remove("drag-over");
+  var f=e.dataTransfer.files[0];
+  if(f) procesarArchivoScan(f);
+};
+
+/**
+ * Procesa el archivo de imagen:
+ *  1. Valida tamaño
+ *  2. Redimensiona a máx 1600px y comprime a JPEG 0.85
+ *     → reduce payload de ~5MB a ~300KB, acelerando OCR significativamente
+ *  3. Muestra preview y dispara envío
+ */
+function procesarArchivoScan(file){
+  if(file.size > 15*1024*1024){ alert("Imagen demasiado grande (máx 15MB)"); return; }
+
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var original = ev.target.result;
+
+    // Mostrar preview inmediato con imagen original
+    var prev = document.getElementById("scan-preview");
+    prev.src = original; prev.style.display = "block";
+    document.getElementById("scan-dropzone").classList.add("tiene-img");
+    ocultarResultadosOCR();
+
+    // Comprimir via canvas antes de enviar
+    _comprimirImagen(original, function(b64Comprimido, mime) {
+      imagenMime = mime;
+      imagenB64  = b64Comprimido;
+      enviarScan();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+/**
+ * Redimensiona y comprime la imagen usando canvas.
+ * @param {string}   dataUrl  - Data URL original (cualquier formato)
+ * @param {Function} callback - function(base64String, mimeType)
+ */
+function _comprimirImagen(dataUrl, callback) {
+  var MAX_DIM  = 1600;   // px — suficiente para OCR manuscrito
+  var QUALITY  = 0.85;   // JPEG quality — buen balance calidad/tamaño
+  var MIME_OUT = "image/jpeg";
+
+  var img = new Image();
+  img.onload = function() {
+    var w = img.width;
+    var h = img.height;
+
+    // Calcular dimensiones respetando aspect ratio
+    if (w > MAX_DIM || h > MAX_DIM) {
+      if (w >= h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+      else        { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+    }
+
+    var canvas = document.createElement("canvas");
+    canvas.width  = w;
+    canvas.height = h;
+    var ctx = canvas.getContext("2d");
+
+    // Fondo blanco para imágenes con transparencia (PNG)
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+
+    var comprimida = canvas.toDataURL(MIME_OUT, QUALITY);
+    var b64 = comprimida.split(",")[1];
+
+    var orig_kb  = Math.round(dataUrl.length * 3/4 / 1024);
+    var comp_kb  = Math.round(b64.length     * 3/4 / 1024);
+    console.log("Imagen comprimida: " + orig_kb + "KB → " + comp_kb + "KB (" + w + "×" + h + "px)");
+
+    callback(b64, MIME_OUT);
+  };
+  img.onerror = function() {
+    // Fallback: enviar original sin comprimir
+    console.warn("No se pudo comprimir imagen, enviando original.");
+    callback(dataUrl.split(",")[1], "image/jpeg");
+  };
+  img.src = dataUrl;
+}
+
+function ocultarResultadosOCR(){
+  ["ocr-resultado-box","ocr-alerta-box","ocr-error-box"].forEach(function(id){
+    document.getElementById(id).style.display="none";
+  });
+  document.getElementById("scan-btns").style.display="none";
+}
+
+function enviarScan(){
+  if(!partidoSelScan||!imagenB64){ alert("Selecciona un partido primero."); return; }
+  var pin=window.getAdminPIN?window.getAdminPIN():"";
+  document.getElementById("ocr-spinner").style.display="block";
+  document.getElementById("ocr-status").style.display="block";
+  ocultarResultadosOCR();
+
+  if(typeof google==="undefined"||!google.script){
+    // Demo
+    setTimeout(function(){
+      document.getElementById("ocr-spinner").style.display="none";
+      document.getElementById("ocr-status").style.display="none";
+      mostrarResultadoOCR({ok:true,datos:{marcador:"3 - 1",goleadores_ok:2,tarjetas_ok:1,alertas:[],datos_extraidos:{goles_local:3,goles_visitante:1,confianza:"alta"}}});
+    },1500);
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      document.getElementById("ocr-spinner").style.display="none";
+      document.getElementById("ocr-status").style.display="none";
+      mostrarResultadoOCR(res);
+    })
+    .withFailureHandler(function(e){
+      document.getElementById("ocr-spinner").style.display="none";
+      document.getElementById("ocr-status").style.display="none";
+      document.getElementById("ocr-error-box").style.display="block";
+      document.getElementById("ocr-error-box").innerHTML="❌ Error de conexión: "+e;
+    })
+    .procesarFichaEscaneada(partidoSelScan.id_partido, imagenB64, imagenMime, pin);
+}
+
+function mostrarResultadoOCR(res){
+  if(!res||!res.ok){
+    document.getElementById("ocr-error-box").style.display="block";
+    document.getElementById("ocr-error-box").innerHTML="❌ "+(res?res.mensaje:"Error desconocido");
+    return;
+  }
+  datosOCR=res.datos;
+  var d=res.datos;
+  var ext=d.datos_extraidos||{};
+
+  // ── Nombres de equipos en MAYÚSCULAS con banderas ──
+  var nombreLocal  = ((partidoSelScan&&(partidoSelScan.pais_local   ||partidoSelScan.grupo_local   ))||"LOCAL"  ).toUpperCase();
+  var nombreVisit  = ((partidoSelScan&&(partidoSelScan.pais_visitante||partidoSelScan.grupo_visitante))||"VISIT." ).toUpperCase();
+  var fl = (partidoSelScan&&partidoSelScan.bandera_local   ) ? bandera(partidoSelScan.bandera_local   )+" " : "";
+  var fv = (partidoSelScan&&partidoSelScan.bandera_visitante) ? bandera(partidoSelScan.bandera_visitante)+" " : "";
+
+  // ── Marcador con banderas ──
+  var partesMarcador = d.marcador ? d.marcador.split("-") : ["?","?"];
+  var golesL = (partesMarcador[0]||"?").trim();
+  var golesV = (partesMarcador[1]||"?").trim();
+  var marcadorHtml =
+    "<div style='display:flex;align-items:center;justify-content:center;gap:12px;font-size:1.4rem;font-weight:800;margin:8px 0 12px'>"+
+      "<span>"+fl+nombreLocal+"</span>"+
+      "<span style='font-size:2rem;color:var(--color-primary,#1a73e8)'>"+golesL+" — "+golesV+"</span>"+
+      "<span>"+fv+nombreVisit+"</span>"+
+    "</div>";
+
+  // ── Tabla de datos ──
+  var confianzaColor = ext.confianza==="alta"?"#2e7d32":ext.confianza==="media"?"#e65100":"#c62828";
+  var tabla = marcadorHtml +
+    "<div class='ocr-dato-fila'><span class='ocr-dato-label'>Goleadores registrados</span><span class='ocr-dato-valor'>"+d.goleadores_ok+"</span></div>"+
+    "<div class='ocr-dato-fila'><span class='ocr-dato-label'>Tarjetas registradas</span><span class='ocr-dato-valor'>"+d.tarjetas_ok+"</span></div>"+
+    "<div class='ocr-dato-fila'><span class='ocr-dato-label'>Confianza OCR</span><span class='ocr-dato-valor' style='color:"+confianzaColor+";font-weight:700'>"+(ext.confianza||"—").toUpperCase()+"</span></div>";
+
+  if(ext.faltas_local!==null&&ext.faltas_local!==undefined){
+    tabla+="<div class='ocr-dato-fila'><span class='ocr-dato-label'>Faltas "+fl+nombreLocal+" / "+fv+nombreVisit+"</span>"+
+           "<span class='ocr-dato-valor'>"+(ext.faltas_local||0)+" / "+(ext.faltas_visitante||0)+"</span></div>";
+  }
+  if(ext.arbitro){
+    tabla+="<div class='ocr-dato-fila'><span class='ocr-dato-label'>Árbitro</span><span class='ocr-dato-valor'>"+ext.arbitro.toUpperCase()+"</span></div>";
+  }
+  if(ext.observaciones){
+    tabla+="<div class='ocr-dato-fila'><span class='ocr-dato-label'>Observaciones</span><span class='ocr-dato-valor' style='font-size:0.85rem'>"+ext.observaciones.toUpperCase()+"</span></div>";
+  }
+  document.getElementById("ocr-datos-tabla").innerHTML=tabla;
+  document.getElementById("ocr-resultado-box").style.display="block";
+
+  if(d.alertas&&d.alertas.length){
+    document.getElementById("ocr-alerta-box").style.display="block";
+    document.getElementById("ocr-alerta-box").innerHTML="⚠️ <strong>Revisión necesaria:</strong><ul style='margin:6px 0 0 16px'>"+
+      d.alertas.map(function(a){return"<li>"+a+"</li>";}).join("")+"</ul>";
+  }
+
+  document.getElementById("scan-btns").style.display="flex";
+}
+
+window.confirmarScan=function(){
+  alert("✅ Los datos ya fueron guardados automáticamente en la base de datos.\n\nMarcador: "+(datosOCR?datosOCR.marcador:"—")+"\nVerifica en la pestaña Partidos.");
+  resetScan();
+};
+
+window.resetScan=function(){
+  imagenB64=""; imagenMime=""; datosOCR=null;
+  document.getElementById("scan-preview").style.display="none";
+  document.getElementById("scan-dropzone").classList.remove("tiene-img");
+  document.getElementById("scan-file").value="";
+  ocultarResultadosOCR();
+};
+
+// ── HELPERS ──
+// bandera() → alias de flagImg (FlagCDN)
+function bandera(c){ return flagImg(c); }
+
+function mostrarPartidosDemo(){
+  partidos=[
+    {id_partido:"P001",grado:"6",deporte:"Futsal",pais_local:"Argentina",bandera_local:"AR",grupo_local:"601",pais_visitante:"Brasil",bandera_visitante:"BR",grupo_visitante:"602",fase:"Fase 1 - Partido A",fecha:"2026-05-10",hora:"13:00",estado:"Programado",goles_local:"",goles_visitante:""},
+    {id_partido:"P002",grado:"7",deporte:"Voleibol",pais_local:"Venezuela",bandera_local:"VE",grupo_local:"703",pais_visitante:"Rumania",bandera_visitante:"RO",grupo_visitante:"702",fase:"Fase 1 - Partido B",fecha:"2026-05-10",hora:"14:00",estado:"Programado",goles_local:"",goles_visitante:""}
+  ];
+  renderListaPartidos("lista-partidos-fa");
+  renderListaPartidos("lista-partidos-scan");
+}
+
+// INIT
+cargarPartidos();
+
+})();
+</script>
+</div>

@@ -1,0 +1,1062 @@
+<!-- ============================================================
+     Modulo_Landing.html — Landing Page Pública
+     Mundial GABO 2026 · I.E. GABO · Cartago, Valle del Cauca
+     Consume: getEstadisticasTorneo(), getProximosPartidos(),
+              getPartidosFinalizados(), getTablaGeneral(),
+              getGoleadores(), getNoticias()
+     Accesible sin login para cualquier visitante.
+     ============================================================ -->
+
+<div id="modulo-landing">
+
+<style>
+#modulo-landing {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 0 100px;
+}
+
+/* ── HERO ── */
+.land-hero {
+  background: linear-gradient(150deg, #0a0e1a 0%, #0047AB 60%, #003380 100%);
+  border-radius: 20px;
+  padding: 36px 28px 32px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+.land-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: rgba(201,162,39,.08);
+  pointer-events: none;
+}
+.land-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; left: -40px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.55);
+  margin-bottom: 10px;
+}
+.hero-titulo {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(28px, 6vw, 48px);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.hero-titulo .dorado { color: #c9a227; }
+.hero-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,.6);
+  margin-bottom: 28px;
+}
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.hero-stat {
+  text-align: center;
+}
+.hero-stat-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: #c9a227;
+  line-height: 1;
+}
+.hero-stat-lbl {
+  font-size: 11px;
+  color: rgba(255,255,255,.5);
+  margin-top: 2px;
+}
+
+/* COUNTDOWN HERO */
+.hero-countdown {
+  display: inline-flex;
+  gap: 10px;
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px;
+  padding: 14px 20px;
+}
+.hcd-box { text-align: center; min-width: 48px; }
+.hcd-num { font-size: 26px; font-weight: 700; color: #fff; line-height: 1; }
+.hcd-sep { font-size: 22px; color: rgba(255,255,255,.3); align-self: flex-start; padding-top: 2px; }
+.hcd-lbl { font-size: 9px; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+/* ── SECCION TITULO ── */
+.sec-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sec-titulo-izq { display: flex; align-items: center; gap: 6px; }
+.sec-dot { width: 6px; height: 6px; border-radius: 50%; background: #0047AB; flex-shrink: 0; }
+.sec-link {
+  font-size: 11px;
+  color: #0047AB;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.sec-link:hover { text-decoration: underline; }
+
+/* ── EN VIVO AHORA ── */
+.live-banner {
+  background: linear-gradient(135deg, #c9a227, #b8911f);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  animation: glow-gold 2s ease-in-out infinite;
+}
+.live-banner.visible { display: flex; }
+@keyframes glow-gold {
+  0%,100% { box-shadow: 0 0 0 0 rgba(201,162,39,.3); }
+  50%      { box-shadow: 0 0 0 6px rgba(201,162,39,0); }
+}
+.live-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%; background: #fff;
+  animation: parpadeo 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes parpadeo { 0%,100%{opacity:1} 50%{opacity:.2} }
+.live-info { flex: 1; min-width: 0; }
+.live-etiqueta { font-size: 10px; font-weight: 700; color: rgba(10,14,26,.6); text-transform: uppercase; letter-spacing: 1px; }
+.live-partido  { font-size: 14px; font-weight: 700; color: #0a0e1a; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-meta     { font-size: 11px; color: rgba(10,14,26,.55); margin-top: 2px; }
+.live-score {
+  font-size: 24px; font-weight: 900; color: #0a0e1a;
+  background: rgba(255,255,255,.35);
+  border-radius: 8px; padding: 4px 12px;
+  flex-shrink: 0;
+}
+
+/* ── PRÓXIMOS PARTIDOS ── */
+.proximo-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform .15s, box-shadow .15s;
+}
+.proximo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,71,171,.08);
+}
+.prox-hora {
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 50px;
+}
+.prox-hora-num { font-size: 15px; font-weight: 700; color: #0047AB; line-height: 1; }
+.prox-hora-lbl { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+.prox-sep { width: 1px; background: #f1f5f9; align-self: stretch; }
+.prox-equipos { flex: 1; min-width: 0; }
+.prox-enfrentamiento {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0d1117;
+}
+.prox-flag { font-size: 20px; line-height: 1; }
+.prox-vs   { font-size: 11px; color: #94a3b8; font-weight: 400; }
+.prox-meta { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+.prox-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: #e8f0fb;
+  color: #0047AB;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ── RESULTADOS RECIENTES ── */
+.resultado-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #1a7a4a;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.res-equipos { flex: 1; min-width: 0; }
+.res-enfrentamiento {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0d1117;
+}
+.res-flag { font-size: 18px; line-height: 1; }
+.res-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.res-score {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0d1117;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 64px;
+}
+.res-fase {
+  font-size: 10px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* ── TABLA GENERAL MINI ── */
+.tabla-mini {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.tabla-mini-head {
+  background: linear-gradient(135deg, #c9a227, #b8911f);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tabla-mini-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0a0e1a;
+}
+table.tbl-mini {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table.tbl-mini th {
+  padding: 7px 12px;
+  background: #fdf6e3;
+  font-size: 10px;
+  font-weight: 600;
+  color: #92400e;
+  text-align: center;
+  border-bottom: 1px solid #fef3c7;
+}
+table.tbl-mini th:nth-child(2) { text-align: left; }
+table.tbl-mini td {
+  padding: 10px 12px;
+  text-align: center;
+  border-bottom: 1px solid #f8fafc;
+  color: #0d1117;
+}
+table.tbl-mini td:nth-child(2) { text-align: left; }
+table.tbl-mini tr:last-child td { border-bottom: none; }
+table.tbl-mini tr:hover td { background: #fefce8; }
+.tbl-eq-cel { display: flex; align-items: center; gap: 8px; }
+.tbl-flag   { font-size: 20px; line-height: 1; }
+.tbl-pais   { font-size: 13px; font-weight: 600; color: #0d1117; }
+.tbl-grupo  { font-size: 10px; color: #94a3b8; }
+.tbl-pts    { font-size: 14px; font-weight: 700; color: #0047AB; }
+.tbl-pos-1  { color: #c9a227; font-weight: 700; }
+.tbl-pos-n  { color: #94a3b8; }
+
+/* ── GOLEADORES MINI ── */
+.gol-mini {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.gol-mini-head {
+  background: #0047AB;
+  padding: 12px 16px;
+}
+.gol-mini-titulo { font-size: 13px; font-weight: 700; color: #fff; }
+.gol-mini-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f8fafc;
+  transition: background .15s;
+}
+.gol-mini-fila:last-child { border-bottom: none; }
+.gol-mini-fila:hover { background: #f8fbff; }
+.gm-rank {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.gm-r1 { background: #c9a227; color: #fff; }
+.gm-r2 { background: #94a3b8; color: #fff; }
+.gm-r3 { background: #cd7f32; color: #fff; }
+.gm-rn { background: #f1f5f9; color: #64748b; }
+.gm-flag   { font-size: 18px; flex-shrink: 0; }
+.gm-nombre { flex: 1; font-size: 13px; font-weight: 600; color: #0d1117; }
+.gm-grupo  { font-size: 10px; color: #94a3b8; }
+.gm-goles  { font-size: 16px; font-weight: 700; color: #0047AB; }
+
+/* ── NOTICIAS ── */
+.noticia-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.noticia-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.07);
+}
+.noticia-icono {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: #e8f0fb;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.noticia-cat {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px;
+  color: #0047AB; margin-bottom: 4px;
+}
+.noticia-titulo {
+  font-size: 14px; font-weight: 600; color: #0d1117;
+  line-height: 1.3; margin-bottom: 4px;
+}
+.noticia-fecha { font-size: 11px; color: #94a3b8; }
+.noticia-share {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: #e6f4ed;
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px;
+  transition: background .2s;
+}
+.noticia-share:hover { background: #1a7a4a; }
+
+/* ── BOTÓN WHATSAPP FLOTANTE ── */
+.wa-flotante {
+  position: fixed;
+  bottom: 24px; right: 20px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: #25D366;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(37,211,102,.35);
+  z-index: 100;
+  transition: transform .2s;
+  text-decoration: none;
+}
+.wa-flotante:hover { transform: scale(1.1); }
+.wa-tooltip {
+  position: fixed;
+  bottom: 84px; right: 14px;
+  background: #0d1117;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+.wa-flotante:hover + .wa-tooltip { opacity: 1; }
+
+/* ── GRID 2 COLUMNAS ── */
+.grid-2-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 600px) {
+  .grid-2-cols { grid-template-columns: 1fr; }
+}
+
+/* ── ESTADO CARGA ── */
+.cargando {
+  text-align: center; padding: 32px 20px; color: #94a3b8;
+}
+.cargando-spinner {
+  width: 28px; height: 28px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #0047AB;
+  border-radius: 50%;
+  animation: girar 1s linear infinite;
+  margin: 0 auto 10px;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+.sin-datos { text-align: center; padding: 24px; color: #94a3b8; font-size: 13px; }
+
+/* ── PROGRESO TORNEO ── */
+.progreso-mini {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.prog-label { font-size: 12px; font-weight: 600; color: #475569; flex-shrink: 0; }
+.prog-bar   { flex: 1; height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
+.prog-fill  { height: 100%; background: linear-gradient(90deg, #0047AB, #1a7a4a); border-radius: 3px; transition: width .8s ease; }
+.prog-pct   { font-size: 12px; font-weight: 700; color: #0047AB; flex-shrink: 0; }
+</style>
+
+<!-- ══════════════════════════════════
+     HERO
+     ══════════════════════════════════ -->
+<div class="land-hero">
+  <div class="hero-eyebrow">🇨🇴 I.E. GABO · Cartago, Valle del Cauca · Jornada Tarde</div>
+
+  <div class="hero-titulo">
+    ⚽ Mundial <span class="dorado">GABO</span> 2026
+  </div>
+  <div class="hero-sub">Juegos Interclases · 5 grados · 2 deportes · Una sola cancha</div>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="hero-stat-num" id="h-equipos">—</div>
+      <div class="hero-stat-lbl">Equipos</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num" id="h-jugadores">—</div>
+      <div class="hero-stat-lbl">Jugadores</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num" id="h-partidos">—</div>
+      <div class="hero-stat-lbl">Partidos</div>
+    </div>
+    <div class="hero-stat">
+      <div class="hero-stat-num" id="h-goles">—</div>
+      <div class="hero-stat-lbl">Goles</div>
+    </div>
+  </div>
+
+  <div class="hero-countdown" id="hero-countdown">
+    <div class="hcd-box">
+      <div class="hcd-num" id="hc-d">--</div>
+      <div class="hcd-lbl">d&iacute;as</div>
+    </div>
+    <div class="hcd-sep">:</div>
+    <div class="hcd-box">
+      <div class="hcd-num" id="hc-h">--</div>
+      <div class="hcd-lbl">horas</div>
+    </div>
+    <div class="hcd-sep">:</div>
+    <div class="hcd-box">
+      <div class="hcd-num" id="hc-m">--</div>
+      <div class="hcd-lbl">min</div>
+    </div>
+    <div class="hcd-sep">:</div>
+    <div class="hcd-box">
+      <div class="hcd-num" id="hc-s">--</div>
+      <div class="hcd-lbl">seg</div>
+    </div>
+  </div>
+  <div id="hc-fecha-label" style="font-size:11px;color:rgba(255,255,255,.35);text-align:center;margin-top:6px;letter-spacing:.04em;">Cargando fecha...</div>
+</div>
+
+<!-- ── PROGRESO DEL TORNEO ── -->
+<div class="progreso-mini">
+  <div class="prog-label">Avance del torneo</div>
+  <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="prog-pct" id="prog-pct">0%</div>
+</div>
+
+<!-- ── EN VIVO AHORA ── -->
+<div class="live-banner" id="live-banner">
+  <div class="live-dot"></div>
+  <div class="live-info">
+    <div class="live-etiqueta">🔴 En cancha ahora</div>
+    <div class="live-partido" id="live-partido">—</div>
+    <div class="live-meta"    id="live-meta">—</div>
+  </div>
+  <div class="live-score" id="live-score">— : —</div>
+</div>
+
+<!-- ══════════════════════════════════
+     PRÓXIMOS + RESULTADOS
+     ══════════════════════════════════ -->
+<div class="grid-2-cols" style="margin-bottom:20px">
+
+  <!-- PRÓXIMOS PARTIDOS -->
+  <div>
+    <div class="sec-titulo">
+      <div class="sec-titulo-izq">
+        <div class="sec-dot"></div>
+        Próximos partidos
+      </div>
+    </div>
+    <div id="proximos-lista">
+      <div class="cargando"><div class="cargando-spinner"></div>Cargando...</div>
+    </div>
+  </div>
+
+  <!-- RESULTADOS RECIENTES -->
+  <div>
+    <div class="sec-titulo">
+      <div class="sec-titulo-izq">
+        <div class="sec-dot" style="background:#1a7a4a"></div>
+        Resultados recientes
+      </div>
+    </div>
+    <div id="resultados-lista">
+      <div class="cargando"><div class="cargando-spinner"></div>Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     TABLA GENERAL + GOLEADORES
+     ══════════════════════════════════ -->
+<div class="grid-2-cols" style="margin-bottom:20px">
+
+  <!-- TABLA GENERAL -->
+  <div>
+    <div class="sec-titulo">
+      <div class="sec-titulo-izq">
+        <div class="sec-dot" style="background:#c9a227"></div>
+        Clasificación general
+      </div>
+    </div>
+    <div class="tabla-mini">
+      <div class="tabla-mini-head">
+        <div class="tabla-mini-titulo">🏆 Campeón Mundial GABO 2026</div>
+        <div style="font-size:11px;color:rgba(10,14,26,.5)">Puntos acumulados</div>
+      </div>
+      <div id="tabla-general-mini">
+        <div class="cargando"><div class="cargando-spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOLEADORES -->
+  <div>
+    <div class="sec-titulo">
+      <div class="sec-titulo-izq">
+        <div class="sec-dot"></div>
+        Goleadores
+      </div>
+    </div>
+    <div class="gol-mini">
+      <div class="gol-mini-head">
+        <div class="gol-mini-titulo">⚽ Top goleadores</div>
+      </div>
+      <div id="goleadores-mini">
+        <div class="cargando"><div class="cargando-spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     NOTICIAS
+     ══════════════════════════════════ -->
+<div style="margin-bottom:20px">
+  <div class="sec-titulo">
+    <div class="sec-titulo-izq">
+      <div class="sec-dot" style="background:#c0392b"></div>
+      Noticias del torneo
+    </div>
+  </div>
+  <div id="noticias-lista">
+    <div class="cargando"><div class="cargando-spinner"></div>Cargando noticias...</div>
+  </div>
+</div>
+
+<!-- ── BOTÓN FLOTANTE WHATSAPP ── -->
+<a class="wa-flotante" id="wa-btn" href="#" target="_blank" title="Consultar al docente">
+  💬
+</a>
+<div class="wa-tooltip">Consultar al docente</div>
+
+<!-- ── SCRIPTS ── -->
+<script>
+// flagImg global de Shell.html
+
+(function() {
+
+// ── WHATSAPP — número desde IC_Config ──
+// El admin puede configurar el número desde el panel de Estructura
+// usando setConfigAdmin(pin, "wa_numero", "573XXXXXXXXX")
+var WA_MSG = "Hola! Tengo una pregunta sobre el Mundial GABO 2026 \uD83C\uDFC6";
+
+function configurarWhatsApp(numero) {
+  var btn = document.getElementById("wa-btn");
+  if (!btn) return;
+  var num = (numero || "").replace(/\D/g, "");
+  if (num.length >= 10) {
+    btn.href = "https://wa.me/" + num + "?text=" + encodeURIComponent(WA_MSG);
+    btn.style.display = "";
+  } else {
+    // Sin número válido: ocultar el botón en vez de mostrar enlace roto
+    btn.style.display = "none";
+  }
+}
+
+// Leer número desde IC_Config
+google.script.run
+  .withSuccessHandler(function(r) {
+    configurarWhatsApp(r && r.ok ? r.datos : "");
+  })
+  .withFailureHandler(function() {
+    configurarWhatsApp("");
+  })
+  .getConfigPublico("wa_numero");
+
+// ── COUNTDOWN — Lee fecha desde IC_Config (misma fuente que Apertura) ──
+// CORRECCIÓN AUDITORÍA: la fecha hardcodeada causaba desincronización
+// con el countdown de Apertura cuando el admin cambiaba la fecha.
+var FECHA_TORNEO    = null;
+var cdTimer         = null;
+
+function p2cd(n) { return n < 10 ? "0" + n : String(n); }
+
+function tickCountdown() {
+  if (!FECHA_TORNEO) return;
+  var ahora = new Date();
+  var diff  = Math.max(0, FECHA_TORNEO - ahora);
+  document.getElementById("hc-d").textContent = p2cd(Math.floor(diff / 86400000));
+  document.getElementById("hc-h").textContent = p2cd(Math.floor((diff % 86400000) / 3600000));
+  document.getElementById("hc-m").textContent = p2cd(Math.floor((diff % 3600000) / 60000));
+  document.getElementById("hc-s").textContent = p2cd(Math.floor((diff % 60000) / 1000));
+  if (diff === 0) {
+    document.getElementById("hero-countdown").style.display = "none";
+    clearInterval(cdTimer);
+  }
+}
+
+function iniciarCountdownLanding() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      var fs = (res && res.ok && res.datos) ? res.datos : "";
+      if (fs) {
+        FECHA_TORNEO = new Date(fs);
+        // Mostrar fecha formateada bajo el countdown
+        var el = document.getElementById("hc-fecha-label");
+        if (el) {
+          var d = FECHA_TORNEO;
+          var meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+          el.textContent = d.getDate() + " de " + meses[d.getMonth()] + " " + d.getFullYear();
+        }
+      } else {
+        // Sin fecha configurada — mostrar mensaje
+        var el = document.getElementById("hc-fecha-label");
+        if (el) el.textContent = "Fecha por confirmar";
+      }
+      tickCountdown();
+      cdTimer = setInterval(tickCountdown, 1000);
+    })
+    .withFailureHandler(function() {
+      // Fallback silencioso — el countdown muestra -- si no hay fecha
+      tickCountdown();
+      cdTimer = setInterval(tickCountdown, 1000);
+    })
+    .getConfigPublico("fecha_inicio_torneo");
+}
+iniciarCountdownLanding();
+
+// ── ESTADISTICAS HERO ──
+function cargarEstadisticas() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) return;
+      var s = res.datos;
+      document.getElementById("h-equipos").textContent   = s.total_equipos    || "0";
+      document.getElementById("h-jugadores").textContent = s.total_jugadores   || "0";
+      document.getElementById("h-partidos").textContent  = s.partidos_jugados  || "0";
+      document.getElementById("h-goles").textContent     = s.total_goles       || "0";
+
+      var pct = s.porcentaje_avance || 0;
+      document.getElementById("prog-pct").textContent  = pct + "%";
+      document.getElementById("prog-fill").style.width = pct + "%";
+    })
+    .withFailureHandler(function() {})
+    .getEstadisticasTorneo();
+}
+
+// ── EN VIVO ──
+function cargarEnVivo() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      var banner = document.getElementById("live-banner");
+      if (res.ok && res.datos) {
+        var p  = res.datos;
+        var fl = flagImg(p.bandera_local);
+        var fv = flagImg(p.bandera_visitante);
+        document.getElementById("live-partido").innerHTML =
+          fl + " " + (p.pais_local || p.grupo_local) +
+          "  vs  " +
+          fv + " " + (p.pais_visitante || p.grupo_visitante);
+        document.getElementById("live-meta").textContent =
+          "Grado " + p.grado + "\xB0 \xB7 " + p.deporte + " \xB7 " + (p.fase || "");
+        var gl = (p.goles_local    !== "" && p.goles_local    !== undefined) ? p.goles_local    : "\u2014";
+        var gv = (p.goles_visitante !== "" && p.goles_visitante !== undefined) ? p.goles_visitante : "\u2014";
+        document.getElementById("live-score").textContent = gl + " : " + gv;
+        banner.classList.add("visible");
+      } else {
+        banner.classList.remove("visible");
+      }
+    })
+    .withFailureHandler(function() {
+      document.getElementById("live-banner").classList.remove("visible");
+    })
+    .getPartidoEnJuego();
+}
+
+// ── PRÓXIMOS PARTIDOS ──
+function cargarProximos() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      var cont = document.getElementById("proximos-lista");
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        cont.innerHTML = '<div class="sin-datos">Sin partidos programados próximamente.</div>';
+        return;
+      }
+      var html = "";
+      var lista = res.datos.slice(0, 5);
+      for (var i = 0; i < lista.length; i++) {
+        var p  = lista[i];
+        var fl = flagImg(p.bandera_local);
+        var fv = flagImg(p.bandera_visitante);
+        html = html +
+          '<div class="proximo-card">' +
+            '<div class="prox-hora">' +
+              '<div class="prox-hora-num">' + (p.hora || "\u2014") + '</div>' +
+              '<div class="prox-hora-lbl">' + formatFechaCorta(p.fecha) + '</div>' +
+            '</div>' +
+            '<div class="prox-sep"></div>' +
+            '<div class="prox-equipos">' +
+              '<div class="prox-enfrentamiento">' +
+                '<span class="prox-flag">' + fl + '</span>' +
+                '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+                  (p.pais_local || p.grupo_local) +
+                '</span>' +
+                '<span class="prox-vs">vs</span>' +
+                '<span class="prox-flag">' + fv + '</span>' +
+                '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right">' +
+                  (p.pais_visitante || p.grupo_visitante) +
+                '</span>' +
+              '</div>' +
+              '<div class="prox-meta">Grado ' + p.grado + '\xB0 \xB7 ' + p.deporte + ' \xB7 ' + (p.fase || "") + '</div>' +
+            '</div>' +
+            '<div class="prox-badge">🔵</div>' +
+          '</div>';
+      }
+      cont.innerHTML = html;
+    })
+    .withFailureHandler(function() {
+      document.getElementById("proximos-lista").innerHTML =
+        '<div class="sin-datos">Error cargando partidos.</div>';
+    })
+    .getProximosPartidosPublicos(5); // AUDITORIA v3: solo muestra partidos publicos
+}
+
+// ── RESULTADOS RECIENTES ──
+function cargarResultados() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      var cont = document.getElementById("resultados-lista");
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        cont.innerHTML = '<div class="sin-datos">Esperando primer resultado...</div>';
+        return;
+      }
+      var html = "";
+      var lista = res.datos.slice(0, 5);
+      for (var i = 0; i < lista.length; i++) {
+        var p  = lista[i];
+        var fl = flagImg(p.bandera_local);
+        var fv = flagImg(p.bandera_visitante);
+        var gl = Number(p.goles_local)     || 0;
+        var gv = Number(p.goles_visitante) || 0;
+        var ganadorLocal = gl > gv;
+        var empate       = gl === gv;
+
+        html = html +
+          '<div class="resultado-card">' +
+            '<div class="res-equipos">' +
+              '<div class="res-enfrentamiento">' +
+                '<span class="res-flag">' + fl + '</span>' +
+                '<span style="flex:1;font-weight:' + (ganadorLocal ? '700' : '400') + '">' +
+                  (p.pais_local || p.grupo_local) +
+                '</span>' +
+                '<span class="res-flag">' + fv + '</span>' +
+                '<span style="font-weight:' + (!ganadorLocal && !empate ? '700' : '400') + '">' +
+                  (p.pais_visitante || p.grupo_visitante) +
+                '</span>' +
+              '</div>' +
+              '<div class="res-meta">Grado ' + p.grado + '\xB0 \xB7 ' + p.deporte + ' \xB7 ' + (p.fase || "") + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div class="res-score">' + gl + ' \u2013 ' + gv + '</div>' +
+              '<div class="res-fase">' + (p.estado === "W.O." ? "W.O." : "Finalizado") + '</div>' +
+            '</div>' +
+          '</div>';
+      }
+      cont.innerHTML = html;
+    })
+    .withFailureHandler(function() {
+      document.getElementById("resultados-lista").innerHTML =
+        '<div class="sin-datos">Error cargando resultados.</div>';
+    })
+    .getPartidosFinalizados(5);
+}
+
+// ── TABLA GENERAL ──
+function cargarTablaGeneral() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      var cont = document.getElementById("tabla-general-mini");
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        cont.innerHTML = '<div class="sin-datos">Sin datos aún.</div>';
+        return;
+      }
+      var top5 = res.datos.slice(0, 5);
+      var html =
+        '<table class="tbl-mini">' +
+          '<thead><tr>' +
+            '<th>#</th><th>Equipo</th><th>PJ</th><th>Pts</th>' +
+          '</tr></thead><tbody>';
+
+      for (var i = 0; i < top5.length; i++) {
+        var eq   = top5[i];
+        var flag = flagImg(eq.bandera);
+        html = html +
+          '<tr>' +
+            '<td class="' + (i === 0 ? "tbl-pos-1" : "tbl-pos-n") + '">' +
+              (i === 0 ? "👑" : (i + 1)) +
+            '</td>' +
+            '<td>' +
+              '<div class="tbl-eq-cel">' +
+                '<span class="tbl-flag">' + flag + '</span>' +
+                '<div>' +
+                  '<div class="tbl-pais">' + (eq.pais || eq.grupo) + '</div>' +
+                  '<div class="tbl-grupo">Grupo ' + eq.grupo + '</div>' +
+                '</div>' +
+              '</div>' +
+            '</td>' +
+            '<td>' + (eq.pj || 0) + '</td>' +
+            '<td class="tbl-pts">' + (eq.puntos || 0) + '</td>' +
+          '</tr>';
+      }
+      html = html + '</tbody></table>';
+      cont.innerHTML = html;
+    })
+    .withFailureHandler(function() {
+      document.getElementById("tabla-general-mini").innerHTML =
+        '<div class="sin-datos">Error cargando tabla.</div>';
+    })
+    .getTablaGeneral();
+}
+
+// ── GOLEADORES ──
+function cargarGoleadores() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      var cont = document.getElementById("goleadores-mini");
+      if (!res.ok || !res.datos || res.datos.length === 0) {
+        cont.innerHTML = '<div class="sin-datos">Sin goles registrados.</div>';
+        return;
+      }
+      var top5 = res.datos.slice(0, 5);
+      var html = "";
+      var rankClass = ["gm-r1","gm-r2","gm-r3","gm-rn","gm-rn"];
+
+      for (var i = 0; i < top5.length; i++) {
+        var g    = top5[i];
+        var flag = flagImg(g.bandera);
+        html = html +
+          '<div class="gol-mini-fila">' +
+            '<div class="gm-rank ' + (rankClass[i] || "gm-rn") + '">' + (i + 1) + '</div>' +
+            '<div class="gm-flag">' + flag + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="gm-nombre">' + (g.nombre_jugador || "Jugador") + '</div>' +
+              '<div class="gm-grupo">Grupo ' + (g.grupo || "\u2014") + ' \xB7 ' + (g.pais || "") + '</div>' +
+            '</div>' +
+            '<div class="gm-goles">' + (g.goles || 0) + ' ⚽</div>' +
+          '</div>';
+      }
+      cont.innerHTML = html;
+    })
+    .withFailureHandler(function() {
+      document.getElementById("goleadores-mini").innerHTML =
+        '<div class="sin-datos">Error cargando goleadores.</div>';
+    })
+    .getGoleadores("", 5);
+}
+
+// ── NOTICIAS ──
+function cargarNoticias() {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      var cont = document.getElementById("noticias-lista");
+      if (!res || !res.ok || !res.datos || res.datos.length === 0) {
+        cont.innerHTML = '<div class="sin-datos">Sin noticias publicadas aún.<br>El docente publicará novedades del torneo aquí.</div>';
+        return;
+      }
+
+      // Filtrar noticias programadas que aún no son públicas
+      // (el Landing es vista pública, nunca muestra programadas)
+      var ahora = new Date();
+      var visibles = res.datos.filter(function(n) {
+        if (n.fecha_programada) {
+          var fp = new Date(n.fecha_programada);
+          if (!isNaN(fp.getTime()) && fp > ahora) return false;
+        }
+        return true;
+      });
+
+      if (visibles.length === 0) {
+        cont.innerHTML = '<div class="sin-datos">Sin noticias publicadas aún.<br>El docente publicará novedades del torneo aquí.</div>';
+        return;
+      }
+
+      var html  = "";
+      var lista = visibles.slice(0, 3);
+      var iconos = {
+        "Resultados"   : "🏆",
+        "Convocatorias": "📋",
+        "Logros"       : "🌟",
+        "Curiosidades" : "💡",
+        "General"      : "📰"
+      };
+
+      for (var i = 0; i < lista.length; i++) {
+        var n     = lista[i];
+        var icono = iconos[n.categoria] || "📰";
+        var fecha = formatFechaTexto(n.fecha_publicacion);
+        html = html +
+          '<div class="noticia-card">' +
+            '<div class="noticia-icono">' + icono + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div class="noticia-cat">' + (n.categoria || "General") + '</div>' +
+              '<div class="noticia-titulo">' + (n.titulo || "") + '</div>' +
+              '<div class="noticia-fecha">' + fecha + '</div>' +
+            '</div>' +
+            '<button class="noticia-share" onclick="compartirWA(' + JSON.stringify(n.titulo) + ')" title="Compartir en WhatsApp">📤</button>' +
+          '</div>';
+      }
+      cont.innerHTML = html;
+    })
+    .withFailureHandler(function(err) {
+      document.getElementById("noticias-lista").innerHTML =
+        '<div class="sin-datos">Error cargando noticias.</div>';
+    })
+    .getNoticias(10);
+}
+
+// ── COMPARTIR EN WHATSAPP ──
+function compartirWA(titulo) {
+  var texto = "📰 *Mundial GABO 2026*\n" + titulo + "\n\nMás info en la plataforma oficial de I.E. GABO";
+  var url   = "https://wa.me/?text=" + encodeURIComponent(texto);
+  window.open(url, "_blank");
+}
+window.compartirWA = compartirWA;
+
+// ── HELPERS ──
+/* old flagImg emoji removed */
+
+// AUDITORIA v3: formatFechaCorta corregida — elimina parte de tiempo ISO
+function formatFechaCorta(f) {
+  if (!f) return "Por definir";
+  var s = String(f).trim().split("T")[0]; // quitar parte de tiempo si viene ISO
+  if (s.indexOf("-") !== -1) {
+    var p = s.split("-");
+    if (p.length >= 3) return p[2].substring(0,2) + "/" + p[1];
+  }
+  return s;
+}
+
+// AUDITORIA v3: formatFechaTexto corregida — parseo manual evita UTC day-shift
+// new Date("2026-04-10") en UTC-5 crea el 9 de abril a las 19:00 local.
+// Solución: parsear YYYY-MM-DD manualmente y crear Date con hora noon local.
+function formatFechaTexto(f) {
+  if (!f) return "";
+  try {
+    var s = String(f).trim().split("T")[0]; // solo YYYY-MM-DD
+    var p = s.split("-");
+    if (p.length === 3) {
+      // Construir Date con hora noon local → evita UTC offset day-shift
+      var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]), 12, 0, 0);
+      var opt = { day: "numeric", month: "long" };
+      return d.toLocaleDateString("es-CO", opt);
+    }
+  } catch(e) {}
+  return String(f);
+}
+
+// ── AUTO-REFRESH cada 90 segundos ──
+setInterval(function() {
+  cargarEstadisticas();
+  cargarEnVivo();
+  cargarProximos();
+  cargarResultados();
+}, 90000);
+
+// ── INICIALIZAR ──
+cargarEstadisticas();
+cargarEnVivo();
+cargarProximos();
+cargarResultados();
+cargarTablaGeneral();
+cargarGoleadores();
+cargarNoticias();
+
+})();
+</script>
+</div>
